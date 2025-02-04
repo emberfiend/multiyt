@@ -13,6 +13,10 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+input {
+  width: 100%;
+}
+
 a {
   font-weight: 500;
   color: #646cff;
@@ -52,6 +56,42 @@ button:hover {
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
+}
+
+.video-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+}
+
+.video-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.view-selector {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+@media (max-width: 600px) {
+  .video-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 601px) and (max-width: 1200px) {
+  .video-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 1201px) {
+  .video-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
 }
 
 @media (prefers-color-scheme: light) {
