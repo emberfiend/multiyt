@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { fetchVideos, Video } from './youtube';
+//import { channel } from 'diagnostics_channel';
 
 interface VideoWithWatched extends Video {
   hasBeenWatched: boolean;
+  channelIdHumanReadable: string; // Add the new property
 }
 
 function App() {
@@ -15,7 +17,9 @@ function App() {
   const [channelIdentifiers, setChannelIdentifiers] = useState<string>(() => {
     return localStorage.getItem('channelIdentifiers') || 'CosmicPumpkin,DrGeoffLindsey,HGModernism,LamoGaming,LatteASMR,PracticalEngineeringChannel,ShortCircuit,WilliamOsman2,cherry_official,littlechineseeverywhere,scottmanley,zefrank';
   });
-  const [inputValue, setInputValue] = useState<string>(channelIdentifiers);
+  const [isAddingChannel, setIsAddingChannel] = useState(false);
+  const [newChannel, setNewChannel] = useState<string | null>(null);
+  //const [inputValue, setInputValue] = useState<string>(channelIdentifiers);
   const [viewMode, setViewMode] = useState<string>(() => {
     return localStorage.getItem('viewMode') || 'list';
   });
@@ -24,6 +28,9 @@ function App() {
   });
   const [perChannelQueryCount, setPerChannelQueryCount] = useState<number>(() => {
     return parseInt(localStorage.getItem('perChannelQueryCount') || '3', 10);
+  });
+  const [historyMonths, setHistoryMonths] = useState<number>(() => {
+    return parseInt(localStorage.getItem('historyMonths') || '3', 10);
   });
 
   const apiKey = 'AIzaSyAm9PqXUWUL7r-uEWL0OAmnZ3kL8oFyV0M';
@@ -58,7 +65,7 @@ function App() {
       const volumeScalar = Math.floor(perChannelQueryCount / 10) + 1 * channelIdentifiers.split(',').length;
       const cullTimer = volumeScalar * 10 * 60 * 1000;
       console.log('Volume scalar is', volumeScalar, 'with an API hit timer of', cullTimer / 60000, 'minutes');
-      if (now - lastAPICall < cullTimer) {
+      if (!isAddingChannel && now - lastAPICall < cullTimer) {
         console.log('Using cached data:', videos.length, 'videos in localStorage');
         console.log('Next API hit in', Math.round((cullTimer - (now - lastAPICall)) / 60000), 'minutes');
         return;
@@ -66,6 +73,7 @@ function App() {
 
       setLoading(true);
       setError(null);
+
       try {
         if (!window.gapi.client.youtube) {
           await new Promise<void>((resolve, reject) => {
@@ -76,14 +84,35 @@ function App() {
             });
           });
         }
+        const toFetch = isAddingChannel ? newChannel! : channelIdentifiers;
+
+        if (isAddingChannel && newChannel) {
+          const updatedIdentifiers = (channelIdentifiers + ',' + newChannel)
+            .split(',')
+            .map(id => id.trim())
+            .filter((id, index, self) => self.indexOf(id) === index)
+            .sort()
+            .join(',');
+          
+          setChannelIdentifiers(updatedIdentifiers);
+          localStorage.setItem('channelIdentifiers', updatedIdentifiers);
+          setIsAddingChannel(false);
+          setNewChannel(null);
+        } else {
+          // we want loading a single channel to not reset the timer, so this is only done here
+          setLastAPICall(now);
+          localStorage.setItem('lastAPICall', now.toString());
+        }
+
         const fetchedVideos = await fetchVideos(
-          channelIdentifiers,
+          toFetch,
           perChannelQueryCount,
           apiKey
         );
         const fetchedVideosWithWatched = fetchedVideos.map(video => ({
           ...video,
           hasBeenWatched: false,
+          channelIdHumanReadable: video.channelIdHumanReadable // Set channelIdHumanReadable
         }));
         console.log('Previous videos:', videos);
         console.log('Fetched videos:', fetchedVideosWithWatched);
@@ -109,10 +138,8 @@ function App() {
           const uniqueVideos = Array.from(uniqueVideosMap.values())
             .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
           console.log('Merged videos:', mergedVideos);
-          return uniqueVideos;
+          return cullOldVideos(uniqueVideos);
         });
-        setLastAPICall(now);
-        localStorage.setItem('lastAPICall', now.toString());
       } catch (err) {
         console.error('Error fetching videos:', err);
         setError('Error fetching videos');
@@ -122,26 +149,19 @@ function App() {
     };
 
     initializeGapi();
-  }, [channelIdentifiers, lastAPICall, videos, perChannelQueryCount]);
+  }, 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [lastAPICall, videos, perChannelQueryCount, newChannel, isAddingChannel, historyMonths]); // channelIdentifiers omitted
 
   // Handle channel identifier changes (now extracts value from event)
-  const handleChannelIdentifiersChange = useCallback((newValue: string) => {
-    const newIdentifiers = newValue;
-    const sortedIdentifiers = newIdentifiers
-      .split(',')
-      .map((id) => id.trim())
-      .sort()
-      .join(',');
-    setChannelIdentifiers(sortedIdentifiers);
-    localStorage.setItem('channelIdentifiers', sortedIdentifiers);
-    
-    // forces another API hit if channel identifiers change
-    // TODO: ideally only the delta (new channels) should be fetched
-    if (sortedIdentifiers !== channelIdentifiers) {
-      console.log('Channel identifiers changed, resetting API call timer');
-      resetAPITimer();
-    }
-  }, [channelIdentifiers]); // Dependencies are correctly tracked now
+  const handleAddChannel = (newChannel: string) => {
+    if (!newChannel) return;
+
+    inputRef.current!.value = '';
+  
+    setIsAddingChannel(true);
+    setNewChannel(newChannel);
+  };
 
   // define resetAPITimer function
   const resetAPITimer = () => {
@@ -149,36 +169,26 @@ function App() {
     localStorage.setItem('lastAPICall', '0');
   };
 
-  // Use useRef to keep track of the timeout
-  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
-
-  // Handle input value changes (IMMEDIATE)
-  const handleInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = event.target.value;
-    setInputValue(newValue); // Update input value immediately
-
-    if (debounceTimeout.current) {
-      clearTimeout(debounceTimeout.current);
-    }
-
-    debounceTimeout.current = setTimeout(() => {
-      handleChannelIdentifiersChange(newValue); // Update channelIdentifiers after delay
-    }, 2000);
-  }, [handleChannelIdentifiersChange]);
-
-  // setInputValue when channelIdentifiers changes
-  useEffect(() => {
-    setInputValue(channelIdentifiers);
-  }, [channelIdentifiers]);
+  const cullOldVideos = useCallback((videos: VideoWithWatched[]) => {
+    const dateInPast = new Date();
+    dateInPast.setMonth(dateInPast.getMonth() - historyMonths);
+    const culledVideos = videos.filter(video => new Date(video.publishedAt) > dateInPast);
+    console.log("Culling", videos.length - culledVideos.length, "videos older than", historyMonths, "months");
+    return culledVideos;
+  }, [historyMonths])
 
   // Save videos to localStorage and cull old videos
   useEffect(() => {
-    const threeMonthsAgo = new Date();
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-    const culledVideos = videos.filter(video => new Date(video.publishedAt) > threeMonthsAgo);
-    console.log("Culling", videos.length - culledVideos.length, "videos older than 3 months");
-    localStorage.setItem('videos', JSON.stringify(culledVideos));
+    localStorage.setItem('videos', JSON.stringify(videos));
   }, [videos]);
+
+  useEffect(() => {
+    setVideos(prevVideos => {
+      const culledVideos = cullOldVideos(prevVideos);
+      localStorage.setItem('videos', JSON.stringify(culledVideos));
+      return culledVideos;
+    });
+  }, [historyMonths, cullOldVideos]);
 
   const handleViewModeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newViewMode = event.target.value;
@@ -197,7 +207,19 @@ function App() {
     localStorage.setItem('perChannelQueryCount', newCount.toString());
   };
 
+  const handleHistoryMonthsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newHistoryMonths = parseInt(event.target.value, 10);
+    // check newHistoryMonths is a number and is between 1 and 12
+    if (isNaN(newHistoryMonths) || newHistoryMonths < 1 || newHistoryMonths > 9) {
+      return;
+    }
+
+    setHistoryMonths(newHistoryMonths);
+    localStorage.setItem('historyMonths', newHistoryMonths.toString());
+  };
+
   const handleWatchedChange = (videoId: string) => {
+    console.log('Toggling watched status for video', videoId);
     setVideos((prevVideos) =>
       prevVideos.map((video) =>
         video.id === videoId
@@ -207,48 +229,97 @@ function App() {
     );
   };
 
+  const handleRemoveChannel = (channel: string) => {
+    const newIdentifiers = channelIdentifiers
+      .split(',')
+      .filter((id) => id.trim() !== channel)
+      .join(',');
+    setChannelIdentifiers(newIdentifiers);
+    localStorage.setItem('channelIdentifiers', newIdentifiers);
+    
+    // remove videos created by said channel from state
+    setVideos((prevVideos) => prevVideos.filter(video => video.channelIdHumanReadable !== channel));
+  };
+
+  const resetVideos = () => {
+    setVideos([]);
+    localStorage.removeItem('videos');
+  }
+
+  const inputRef = useRef<HTMLInputElement>(null);
+
   return (
     <main>
       <h1>MultiYT</h1>
-      <input
-        type="text"
-        value={inputValue}
-        onChange={handleInputChange}
-        placeholder="Enter channel identifiers"
-      />
-      <div className="view-selector">
-        <label>
-          <input
-            type="radio"
-            value="list"
-            checked={viewMode === 'list'}
-            onChange={handleViewModeChange}
-          />
-          List View
-        </label>
-        <label>
-          <input
-            type="radio"
-            value="tiled"
-            checked={viewMode === 'tiled'}
-            onChange={handleViewModeChange}
-          />
-          Tiled View
-        </label>
+      <div className="channel-list">
+        {channelIdentifiers.split(',').map((channel) => (
+          <span key={channel} className="channel-item">
+            {channel}
+            <button onClick={() => handleRemoveChannel(channel)}>x</button>
+          </span>
+        ))}
       </div>
-      <div>
-        <label>
-          Videos per Channel:
-          <input
-            type="number"
-            value={perChannelQueryCount}
-            onChange={handlePerChannelQueryCountChange}
-            min="1"
-            max="50"
-          />
-        </label>
+      <div className="channel-controls">
+        <input
+          type="text"
+          placeholder="Enter new channel identifier"
+          ref={inputRef}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              handleAddChannel(inputRef.current?.value || '');
+            }
+          }}
+        />
+        <button onClick={() => handleAddChannel(inputRef.current?.value || '')}>Add channel</button>
+        <div className="hidden-controls">
+          <div className="view-selector">
+            <label>
+              <input
+                type="radio"
+                value="list"
+                checked={viewMode === 'list'}
+                onChange={handleViewModeChange}
+              />
+              List
+            </label>
+            <label>
+              <input
+                type="radio"
+                value="tiled"
+                checked={viewMode === 'tiled'}
+                onChange={handleViewModeChange}
+              />
+              Tiled
+            </label>
+          </div>
+          <div>
+            <label>
+              Videos per channel
+              <input
+                type="number"
+                value={perChannelQueryCount}
+                onChange={handlePerChannelQueryCountChange}
+                min="1"
+                max="50"
+              />
+            </label>
+          </div>
+          <div>
+            <label>
+              Months of history
+              <input
+                type="number"
+                value={historyMonths}
+                onChange={handleHistoryMonthsChange}
+                min="1"
+                max="9"
+              />
+            </label>
+          </div>
+          <button onClick={resetAPITimer}>Force refresh</button>
+          <button onClick={resetVideos}>Purge cache</button>
+        </div>
       </div>
-      <button onClick={resetAPITimer}>Refresh</button>
       {loading && <p>Loading videos...</p>}
       {error && <p>Error: {error}</p>}
       {!loading && !error && (

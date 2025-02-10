@@ -4,7 +4,8 @@ export interface Video {
   publishedAt: string;
   channelTitle: string;
   channelId: string;
-  hasBeenWatched: boolean; // Add the new property
+  hasBeenWatched: boolean;
+  channelIdHumanReadable: string; // Add the new property
 }
 
 // Note: Initialization and loading of the API client will now happen in App.tsx, so these have been moved
@@ -24,6 +25,7 @@ export async function fetchVideos(
     try {
       // 1. Determine if the identifier is a username or channel ID
       let channelId = identifier; // Assume it's a channel ID initially
+      const channelIdHumanReadable = identifier; // Store the human-readable identifier
       if (!identifier.startsWith('UC') && !identifier.startsWith('UU')) {
         // Likely a username, fetch the channel ID
         console.log(`Fetching channel ID for username: ${identifier}`);
@@ -39,7 +41,7 @@ export async function fetchVideos(
         perChannelQueryCount,
         apiKey
       );
-      allVideos.push(...videos.map(video => ({ ...video, hasBeenWatched: false }))); // Set hasBeenWatched to false
+      allVideos.push(...videos.map(video => ({ ...video, hasBeenWatched: false, channelIdHumanReadable }))); // Set hasBeenWatched to false and channelIdHumanReadable
     } catch (error) {
       console.error(`Error fetching videos for channel ${identifier}:`, error);
       // Handle errors as needed (e.g., skip the channel, retry, etc.)
@@ -148,7 +150,8 @@ async function getVideosFromPlaylist(
             publishedAt,
             channelTitle,
             channelId,
-            hasBeenWatched: false // Set hasBeenWatched to false
+            hasBeenWatched: false, // Set hasBeenWatched to false
+            channelIdHumanReadable: '' // Initialize channelIdHumanReadable
           });
         }
       }
