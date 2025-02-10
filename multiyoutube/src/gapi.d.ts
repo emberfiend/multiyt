@@ -10,6 +10,7 @@ declare namespace gapi.client {
       discoveryDocs: string[];
   }): Promise<void>;
   function load(apiName: string, apiVersion: string): Promise<void>;
+  /* eslint-disable @typescript-eslint/no-explicit-any */
   let youtube: any; // Use a more specific type if you can find one
 }
 

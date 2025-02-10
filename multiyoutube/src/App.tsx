@@ -2,7 +2,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { fetchVideos, Video } from './youtube';
 
 function App() {
-  const [videos, setVideos] = useState<Video[]>([]);
+  const [videos, setVideos] = useState<Video[]>(() => {
+    const savedVideos = localStorage.getItem('videos');
+    return savedVideos ? JSON.parse(savedVideos) : [];
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [channelIdentifiers, setChannelIdentifiers] = useState<string>(() => {
@@ -12,9 +15,14 @@ function App() {
   const [viewMode, setViewMode] = useState<string>(() => {
     return localStorage.getItem('viewMode') || 'list';
   });
+  const [lastAPICall, setLastAPICall] = useState<number>(() => {
+    return parseInt(localStorage.getItem('lastAPICall') || '0', 10);
+  });
+  const [perChannelQueryCount, setPerChannelQueryCount] = useState<number>(() => {
+    return parseInt(localStorage.getItem('perChannelQueryCount') || '3', 10);
+  });
 
-  const apiKey = 'AIzaSyAm9PqXUWUL7r-uEWL0OAmnZ3kL8oFyV0M'; // Replace with your API key
-  const perChannelQueryCount = 3;
+  const apiKey = 'AIzaSyAm9PqXUWUL7r-uEWL0OAmnZ3kL8oFyV0M';
 
   useEffect(() => {
     const initializeGapi = () => {
@@ -29,26 +37,32 @@ function App() {
                 'https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest',
               ],
             });
-            // Fetch data after successful initialization
             fetchData();
           } catch (error) {
             console.error('Error initializing gapi client:', error);
-            // Handle error appropriately
           }
         });
       };
       script.onerror = () => {
         console.error('Error loading gapi script');
-        // Handle script loading error appropriately
       };
       document.body.appendChild(script);
     };
 
     const fetchData = async () => {
+      const now = Date.now();
+      const volumeScalar = Math.floor(perChannelQueryCount / 10) + 1 * channelIdentifiers.split(',').length;
+      const cullTimer = volumeScalar * 10 * 60 * 1000;
+      console.log('Volume scalar is', volumeScalar, 'with an API hit timer of', cullTimer / 60000, 'minutes');
+      if (now - lastAPICall < cullTimer) {
+        console.log('Using cached data:', videos.length, 'videos in localStorage');
+        console.log('Next API hit in', Math.round((cullTimer - (now - lastAPICall)) / 60000), 'minutes');
+        return;
+      }
+
       setLoading(true);
       setError(null);
       try {
-        // Ensure 'youtube' client is loaded
         if (!window.gapi.client.youtube) {
           await new Promise<void>((resolve, reject) => {
             window.gapi.client.load('youtube', 'v3').then(() => {
@@ -63,7 +77,23 @@ function App() {
           perChannelQueryCount,
           apiKey
         );
-        setVideos(fetchedVideos);
+        console.log('Previous videos:', videos);
+        console.log('Fetched videos:', fetchedVideos);
+        setVideos((prevVideos) => {
+          // concat arrays and deduplicate by video ID
+          const mergedVideos = [...prevVideos, ...fetchedVideos];
+          const uniqueVideosMap = new Map<string, Video>();
+          mergedVideos.forEach(video => {
+            uniqueVideosMap.set(video.id, video);
+          });
+          // sort by publication date (descending)
+          const uniqueVideos = Array.from(uniqueVideosMap.values())
+            .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+          console.log('Merged videos:', mergedVideos);
+          return uniqueVideos;
+        });
+        setLastAPICall(now);
+        localStorage.setItem('lastAPICall', now.toString());
       } catch (err) {
         console.error('Error fetching videos:', err);
         setError('Error fetching videos');
@@ -73,11 +103,10 @@ function App() {
     };
 
     initializeGapi();
-  }, [channelIdentifiers]);
+  }, [channelIdentifiers, lastAPICall, videos, perChannelQueryCount]);
 
   // Handle channel identifier changes (now extracts value from event)
   const handleChannelIdentifiersChange = useCallback((newValue: string) => {
-    console.log('Change:', newValue);
     const newIdentifiers = newValue;
     const sortedIdentifiers = newIdentifiers
       .split(',')
@@ -86,7 +115,20 @@ function App() {
       .join(',');
     setChannelIdentifiers(sortedIdentifiers);
     localStorage.setItem('channelIdentifiers', sortedIdentifiers);
-  }, []); // Dependencies are correctly tracked now
+    
+    // forces another API hit if channel identifiers change
+    // TODO: ideally only the delta (new channels) should be fetched
+    if (sortedIdentifiers !== channelIdentifiers) {
+      console.log('Channel identifiers changed, resetting API call timer');
+      resetAPITimer();
+    }
+  }, [channelIdentifiers]); // Dependencies are correctly tracked now
+
+  // define resetAPITimer function
+  const resetAPITimer = () => {
+    setLastAPICall(0);
+    localStorage.setItem('lastAPICall', '0');
+  };
 
   // Use useRef to keep track of the timeout
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -110,14 +152,34 @@ function App() {
     setInputValue(channelIdentifiers);
   }, [channelIdentifiers]);
 
+  // Save videos to localStorage and cull old videos
+  useEffect(() => {
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    const culledVideos = videos.filter(video => new Date(video.publishedAt) > threeMonthsAgo);
+    console.log("Culling", videos.length - culledVideos.length, "videos older than 3 months");
+    localStorage.setItem('videos', JSON.stringify(culledVideos));
+  }, [videos]);
+
   const handleViewModeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newViewMode = event.target.value;
     setViewMode(newViewMode);
     localStorage.setItem('viewMode', newViewMode);
   };
 
+  const handlePerChannelQueryCountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newCount = parseInt(event.target.value, 10);
+    // check newCount is a number and is between 1 and 50
+    if (isNaN(newCount) || newCount < 1 || newCount > 50) {
+      return;
+    }
+
+    setPerChannelQueryCount(newCount);
+    localStorage.setItem('perChannelQueryCount', newCount.toString());
+  };
+
   return (
-    <div>
+    <main>
       <h1>MultiYT</h1>
       <input
         type="text"
@@ -143,6 +205,18 @@ function App() {
             onChange={handleViewModeChange}
           />
           Tiled View
+        </label>
+      </div>
+      <div>
+        <label>
+          Videos per Channel:
+          <input
+            type="number"
+            value={perChannelQueryCount}
+            onChange={handlePerChannelQueryCountChange}
+            min="1"
+            max="50"
+          />
         </label>
       </div>
       {loading && <p>Loading videos...</p>}
@@ -184,7 +258,7 @@ function App() {
           )}
         </div>
       )}
-    </div>
+    </main>
   );
 }
 
