@@ -4,6 +4,7 @@ export interface Video {
   publishedAt: string;
   channelTitle: string;
   channelId: string;
+  hasBeenWatched: boolean; // Add the new property
 }
 
 // Note: Initialization and loading of the API client will now happen in App.tsx, so these have been moved
@@ -38,7 +39,7 @@ export async function fetchVideos(
         perChannelQueryCount,
         apiKey
       );
-      allVideos.push(...videos);
+      allVideos.push(...videos.map(video => ({ ...video, hasBeenWatched: false }))); // Set hasBeenWatched to false
     } catch (error) {
       console.error(`Error fetching videos for channel ${identifier}:`, error);
       // Handle errors as needed (e.g., skip the channel, retry, etc.)
@@ -147,6 +148,7 @@ async function getVideosFromPlaylist(
             publishedAt,
             channelTitle,
             channelId,
+            hasBeenWatched: false // Set hasBeenWatched to false
           });
         }
       }

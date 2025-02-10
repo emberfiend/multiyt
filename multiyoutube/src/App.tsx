@@ -1,8 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { fetchVideos, Video } from './youtube';
 
+interface VideoWithWatched extends Video {
+  hasBeenWatched: boolean;
+}
+
 function App() {
-  const [videos, setVideos] = useState<Video[]>(() => {
+  const [videos, setVideos] = useState<VideoWithWatched[]>(() => {
     const savedVideos = localStorage.getItem('videos');
     return savedVideos ? JSON.parse(savedVideos) : [];
   });
@@ -77,14 +81,29 @@ function App() {
           perChannelQueryCount,
           apiKey
         );
+        const fetchedVideosWithWatched = fetchedVideos.map(video => ({
+          ...video,
+          hasBeenWatched: false,
+        }));
         console.log('Previous videos:', videos);
-        console.log('Fetched videos:', fetchedVideos);
+        console.log('Fetched videos:', fetchedVideosWithWatched);
         setVideos((prevVideos) => {
           // concat arrays and deduplicate by video ID
-          const mergedVideos = [...prevVideos, ...fetchedVideos];
-          const uniqueVideosMap = new Map<string, Video>();
-          mergedVideos.forEach(video => {
+          const mergedVideos = [...prevVideos, ...fetchedVideosWithWatched];
+          const uniqueVideosMap = new Map<string, VideoWithWatched>();
+          /*mergedVideos.forEach(video => {
             uniqueVideosMap.set(video.id, video);
+          });*/
+          mergedVideos.forEach(video => {
+            if (uniqueVideosMap.has(video.id)) {
+              // use found videos with hasBeenWatched=1 to update existing videos
+              const existingVideo = uniqueVideosMap.get(video.id);
+              if (existingVideo && video.hasBeenWatched) {
+                existingVideo.hasBeenWatched = true;
+              }
+            } else {
+              uniqueVideosMap.set(video.id, video);
+            }
           });
           // sort by publication date (descending)
           const uniqueVideos = Array.from(uniqueVideosMap.values())
@@ -178,6 +197,16 @@ function App() {
     localStorage.setItem('perChannelQueryCount', newCount.toString());
   };
 
+  const handleWatchedChange = (videoId: string) => {
+    setVideos((prevVideos) =>
+      prevVideos.map((video) =>
+        video.id === videoId
+          ? { ...video, hasBeenWatched: !video.hasBeenWatched }
+          : video
+      )
+    );
+  };
+
   return (
     <main>
       <h1>MultiYT</h1>
@@ -219,6 +248,7 @@ function App() {
           />
         </label>
       </div>
+      <button onClick={resetAPITimer}>Refresh</button>
       {loading && <p>Loading videos...</p>}
       {error && <p>Error: {error}</p>}
       {!loading && !error && (
@@ -226,16 +256,23 @@ function App() {
           {viewMode === 'list' ? (
             <ul>
               {videos.map((video) => (
-                <li key={video.id}>
-                  <a
-                  href={`https://www.youtube.com/watch?v=${video.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  >
-                  {video.title}
-                  </a>{' '}
-                   - {video.channelTitle} - {' '}
-                  {new Date(video.publishedAt).toLocaleDateString('en-GB')}
+                <li key={video.id} className={video.hasBeenWatched ? 'checked' : ''}>
+                  <span>
+                    <a
+                      href={`https://www.youtube.com/watch?v=${video.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {video.title}
+                    </a>{' '}
+                     - {video.channelTitle} - {' '}
+                    {new Date(video.publishedAt).toLocaleDateString('en-GB')}
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={video.hasBeenWatched}
+                    onChange={() => handleWatchedChange(video.id)}
+                  />
                 </li>
               ))}
             </ul>
