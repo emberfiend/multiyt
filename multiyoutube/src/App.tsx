@@ -351,14 +351,15 @@ function App() {
             <ul>
               {videos.map((video) => (
                 <li key={video.id} className={video.hasBeenWatched ? 'checked' : ''}>
-                  <span>
+                  <span className="list-view-item">
+                    {video.channelTitle.substring(0,25).trim()} - {new Date(video.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - {' '}
                     <a
                       href={`https://www.youtube.com/watch?v=${video.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
                       {video.title}
-                    </a> - {video.channelTitle} - {new Date(video.publishedAt).toLocaleDateString('en-GB')}
+                    </a>
                   </span>
                   <input
                     type="checkbox"
@@ -379,14 +380,30 @@ function App() {
                       onChange={() => handleWatchedChange(video.id)}
                     />
                     <p className="video-tile-header">{video.channelTitle.substring(0,25).trim()} - {new Date(video.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>
-                    <iframe
-                      width="240"
-                      height="135"
-                      src={`https://www.youtube.com/embed/${video.id}`}
-                      title={video.title}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    ></iframe>
+                    {/* in embed view, watched video embeds are replaced by thumbs */}
+                    {video.hasBeenWatched ? (
+                      <a
+                        href={`https://www.youtube.com/watch?v=${video.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <img
+                          src={`https://img.youtube.com/vi/${video.id}/mqdefault.jpg`} /* also sd, hq */
+                          alt={video.title}
+                          width="240"
+                          height="135"
+                        />
+                      </a>
+                    ) : (
+                      <iframe
+                        width="240"
+                        height="135"
+                        src={`https://www.youtube.com/embed/${video.id}`}
+                        title={video.title}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      ></iframe>
+                    )}
                     <p>{video.title}</p>
                   </div>
                 ))}
@@ -456,6 +473,7 @@ function App() {
           )}
         </div>
       )}
+      <div>Made with &#x2665; by <a href="https://andrewbackhouse.com/" target="_blank">Andrew</a></div>
     </main>
   );
 }

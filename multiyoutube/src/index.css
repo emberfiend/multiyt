@@ -15,7 +15,7 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-input {
+input:not([type="radio"]):not([type="checkbox"]) {
   width: 20%;
   background-color: transparent; /* Clear background color */
   border: 1px solid #ccc; /* Add a border for better visibility */
@@ -111,8 +111,23 @@ button:focus-visible {
 .view-selector {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  gap: 0rem;
+}
+
+.view-selector label {
+  display: flex;
   align-items: center;
-  gap: 0;
+  gap: 0rem; /* Add space between radio and text */
+}
+
+.list-view {
+  width: 90%;
+}
+
+.list-view-item {
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .list-view ul {
