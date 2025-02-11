@@ -125,12 +125,12 @@ async function getVideosFromPlaylist(
 
   do {
     const response: gapi.client.Response<PlaylistItemListResponse> = await gapi.client.youtube.playlistItems.list({
-        part: 'snippet,contentDetails',
-        playlistId: playlistId,
-        maxResults: Math.min(maxResults, 50),
-        pageToken: nextPageToken,
-        key: apiKey,
-      });
+      part: 'snippet,contentDetails',
+      playlistId: playlistId,
+      maxResults: Math.min(maxResults, 50),
+      pageToken: nextPageToken,
+      key: apiKey,
+    });
 
     const playlistItemListResponse: PlaylistItemListResponse = response.result;
 

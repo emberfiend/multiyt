@@ -38,7 +38,15 @@ function App() {
   const itemsPerPageThumbs = 12;
   const itemsPerPageEmbeds = 4;
 
-  const apiKey = 'AIzaSyAm9PqXUWUL7r-uEWL0OAmnZ3kL8oFyV0M';
+  const [apiKey, setApiKey] = useState<string>(() => {
+    return localStorage.getItem('apiKey') || 'AIzaSyAm9PqXUWUL7r-uEWL0OAmnZ3kL8oFyV0M';
+  });
+
+  const handleApiKeyChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newKey = event.target.value;
+    setApiKey(newKey);
+    localStorage.setItem('apiKey', newKey);
+  };
 
   useEffect(() => {
     const initializeGapi = () => {
@@ -449,7 +457,7 @@ function App() {
         </div>
       )}
       <div className="channel-controls">
-      <div className="vertical-group">
+        <div className="vertical-group">
           <div>
             <label>
               Videos per channel{' '}
@@ -459,6 +467,7 @@ function App() {
                 onChange={handlePerChannelQueryCountChange}
                 min="1"
                 max="50"
+                style={{ width: '40px' }}
               />
             </label>
           </div>
@@ -471,16 +480,31 @@ function App() {
                 onChange={handleHistoryMonthsChange}
                 min="1"
                 max="9"
+                style={{ width: '40px' }}
               />
             </label>
           </div>
+        </div>
+        <div className='vertical-group'>
+          <label>
+            API key{' '}
+            <input 
+              type="text"
+              value={apiKey}
+              onChange={handleApiKeyChange}
+              placeholder="API Key"
+              style={{ width: '350px' }}
+            />
+          </label>
         </div>
         <div className="vertical-group">
           <button onClick={resetAPITimer}>Force refresh</button>
           <button onClick={resetVideos}>Purge cache</button>
         </div>
       </div>
-      <div style={{ paddingTop: '2rem' }}>Made with &#x2665; by <a href="https://andrewbackhouse.com/" target="_blank">Andrew</a></div>
+      <div style={{ paddingTop: '2rem' }}>
+        Made with &#x2665; by <a href="https://andrewbackhouse.com/" target="_blank">Andrew</a>
+      </div>
     </main>
   );
 }
