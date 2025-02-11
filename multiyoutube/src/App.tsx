@@ -14,17 +14,30 @@ function App() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastAPICall, setLastAPICall] = useState<number>(() => {
+    return parseInt(localStorage.getItem('lastAPICall') || '0', 10);
+  });
   const [channelIdentifiers, setChannelIdentifiers] = useState<string>(() => {
-    return localStorage.getItem('channelIdentifiers') || 'CosmicPumpkin,DrGeoffLindsey,HGModernism,LamoGaming,LatteASMR,PracticalEngineeringChannel,ShortCircuit,WilliamOsman2,cherry_official,littlechineseeverywhere,scottmanley,zefrank';
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlChannels = decodeURIComponent(urlParams.get('channels') || '');
+    const localChannels = localStorage.getItem('channelIdentifiers') || '';
+    console.log('merging channels:', localChannels, urlChannels);
+    const mergedChannels = [...new Set([...localChannels.split(','), ...(urlChannels ? urlChannels.split(',') : [])])]
+      .filter(Boolean)
+      .sort()
+      .join(',');
+    localStorage.setItem('channelIdentifiers', mergedChannels);
+    if (mergedChannels !== localChannels) {
+      setLastAPICall(0);
+      localStorage.setItem('lastAPICall', '0');
+    }
+    return mergedChannels;
   });
   const [isAddingChannel, setIsAddingChannel] = useState(false);
   const [newChannel, setNewChannel] = useState<string | null>(null);
   //const [inputValue, setInputValue] = useState<string>(channelIdentifiers);
   const [viewMode, setViewMode] = useState<string>(() => {
     return localStorage.getItem('viewMode') || 'list';
-  });
-  const [lastAPICall, setLastAPICall] = useState<number>(() => {
-    return parseInt(localStorage.getItem('lastAPICall') || '0', 10);
   });
   const [perChannelQueryCount, setPerChannelQueryCount] = useState<number>(() => {
     return parseInt(localStorage.getItem('perChannelQueryCount') || '3', 10);
@@ -203,6 +216,13 @@ function App() {
     });
   }, [historyMonths, cullOldVideos]);
 
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('channels', encodeURIComponent(channelIdentifiers));
+    window.history.replaceState(null, '', `?${urlParams.toString()}`);
+    localStorage.setItem('channelIdentifiers', channelIdentifiers);
+  }, [channelIdentifiers]);
+
   const handleViewModeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newViewMode = event.target.value;
     setViewMode(newViewMode);
@@ -328,7 +348,7 @@ function App() {
       </div>
       {loading && <p>Loading videos...</p>}
       {error && <p>Error: {error}</p>}
-      {!loading && !error && (
+      {/*!loading && */!error && (
         <div className={viewMode === 'list' ? 'list-view' : 'tiled-view'}>
           {viewMode === 'list' ? (
             <ul>
