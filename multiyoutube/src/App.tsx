@@ -32,6 +32,8 @@ function App() {
   const [historyMonths, setHistoryMonths] = useState<number>(() => {
     return parseInt(localStorage.getItem('historyMonths') || '3', 10);
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
 
   const apiKey = 'AIzaSyAm9PqXUWUL7r-uEWL0OAmnZ3kL8oFyV0M';
 
@@ -248,6 +250,12 @@ function App() {
 
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
+
+  const paginatedVideos = videos.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   return (
     <main>
       <h1>MultiYT</h1>
@@ -289,7 +297,16 @@ function App() {
                 checked={viewMode === 'tiled'}
                 onChange={handleViewModeChange}
               />
-              Tiled
+              Embeds
+            </label>
+            <label>
+              <input
+                type="radio"
+                value="thumbnails"
+                checked={viewMode === 'thumbnails'}
+                onChange={handleViewModeChange}
+              />
+              Thumbs
             </label>
           </div>
           <div>
@@ -347,21 +364,77 @@ function App() {
                 </li>
               ))}
             </ul>
+          ) : viewMode === 'tiled' ? (
+            <div>
+              <div className="video-grid">
+                {paginatedVideos.map((video) => (
+                  <div key={video.id} className={video.hasBeenWatched ? 'video-tile-watched' : 'video-tile'}>
+                    <input
+                      type="checkbox"
+                      checked={video.hasBeenWatched}
+                      onChange={() => handleWatchedChange(video.id)}
+                    />
+                    <iframe
+                      width="240"
+                      height="155"
+                      src={`https://www.youtube.com/embed/${video.id}`}
+                      title={video.title}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    ></iframe>
+                    <p>{video.title} (from {video.channelTitle})</p>
+                  </div>
+                ))}
+              </div>
+              <div className="pagination">
+                {Array.from({ length: Math.ceil(videos.length / itemsPerPage) }, (_, index) => (
+                  <button
+                    key={index + 1}
+                    onClick={() => handlePageChange(index + 1)}
+                    disabled={currentPage === index + 1}
+                  >
+                    {index + 1}
+                  </button>
+                ))}
+              </div>
+            </div>
           ) : (
-            <div className="video-grid">
-              {videos.map((video) => (
-                <div key={video.id} className="video-tile">
-                  <iframe
-                    width="240"
-                    height="155"
-                    src={`https://www.youtube.com/embed/${video.id}`}
-                    title={video.title}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  ></iframe>
-                  <p>{video.title} (from {video.channelTitle})</p>
-                </div>
-              ))}
+            <div>
+              <div className="video-grid">
+                {paginatedVideos.map((video) => (
+                  <div key={video.id} className={video.hasBeenWatched ? 'video-tile-watched' : 'video-tile'}>
+                    <input
+                      type="checkbox"
+                      checked={video.hasBeenWatched}
+                      onChange={() => handleWatchedChange(video.id)}
+                    />
+                    <a
+                      href={`https://www.youtube.com/watch?v=${video.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <img
+                        src={`https://img.youtube.com/vi/${video.id}/hqdefault.jpg`}
+                        alt={video.title}
+                        width="240"
+                        height="155"
+                      />
+                    </a>
+                    <p>{video.title} (from {video.channelTitle})</p>
+                  </div>
+                ))}
+              </div>
+              <div className="pagination">
+                {Array.from({ length: Math.ceil(videos.length / itemsPerPage) }, (_, index) => (
+                  <button
+                    key={index + 1}
+                    onClick={() => handlePageChange(index + 1)}
+                    disabled={currentPage === index + 1}
+                  >
+                    {index + 1}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>

@@ -54,6 +54,7 @@ main {
   align-items: center;
   width: 100%;
   max-width: 1200px; /* Center the main element */
+  margin-bottom: 8rem; /* Add some space at the bottom */
 }
 
 h1 {
@@ -65,7 +66,7 @@ h1 {
 button {
   border-radius: 8px;
   border: 1px solid transparent;
-  padding: 0.6em 1.2em;
+  padding: 0.3em 0.3em;
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
@@ -91,6 +92,16 @@ button:focus-visible {
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+.video-tile-watched {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* desaturate the entire element */
+  filter: grayscale(100%);
+  /* lighten the entire element */
+  opacity: 0.3;
 }
 
 .view-selector {
@@ -120,7 +131,7 @@ button:focus-visible {
 }
 
 .list-view input[type="checkbox"] {
-  width: 50px; /* Fixed width */
+  width: 35px; /* Fixed width */
   position: absolute; /* Position it absolutely */
   right: 0; /* Stick to the far right */
 }
@@ -165,6 +176,7 @@ button:focus-visible {
 
 .channel-item button {
   margin-left: 0.5rem;
+  padding: 0.3em 0.1em;
   background: none;
   border: none;
   cursor: pointer;
@@ -176,18 +188,47 @@ button:focus-visible {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 1rem;
   text-wrap: nowrap;
+  font-size: 0.7em;
 }
 
 .hidden-controls {
-  display: none;
+  display: flex;
+  /*visibility: hidden;*/
   align-items: center;
   gap: 0.5rem;
 }
 
-.channel-controls:hover .hidden-controls {
+/*.channel-controls:hover .hidden-controls {
+  visibility: visible;
+}*/
+
+.tiled-view,
+.thumbnails-view {
+  margin-top: 1rem;
+  width: 100%; /* Constrain width to parent's width */
+}
+
+.pagination {
   display: flex;
+  justify-content: center;
+  flex-wrap: wrap; /* Allow buttons to wrap to the next line */
+  margin-top: 1rem;
+  max-width: 100%; /* Constrain to container's width */
+  overflow: hidden; /* Prevent overflow */
+}
+
+.pagination button {
+  margin: 0.25rem 0.25rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid #ccc;
+  background-color: #f5f5dc;
+  cursor: pointer;
+}
+
+.pagination button:disabled {
+  background-color: #ddd;
+  cursor: not-allowed;
 }
 
 @media (max-width: 600px) {
@@ -198,13 +239,13 @@ button:focus-visible {
 
 @media (min-width: 601px) and (max-width: 1200px) {
   .video-grid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
 @media (min-width: 1201px) {
   .video-grid {
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
