@@ -199,6 +199,7 @@ function App() {
     const newViewMode = event.target.value;
     setViewMode(newViewMode);
     localStorage.setItem('viewMode', newViewMode);
+    setCurrentPage(1);
   };
 
   const handlePerChannelQueryCountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -274,10 +275,10 @@ function App() {
         ))}
       </div>
       <div className="channel-controls">
-        <div className="vertical-group"> { /* posterity: style={{ display: 'flex', flexDirection: 'column' }} */ }
+        <div>
           <input
             type="text"
-            placeholder="Enter new channel identifier"
+            placeholder="Enter new channel"
             ref={inputRef}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
@@ -287,7 +288,7 @@ function App() {
           />
           <button onClick={() => handleAddChannel(inputRef.current?.value || '')}>Add channel</button>
         </div>
-        <div className="vertical-group">
+        <div>
           <label>
             <input
               type="radio"
@@ -315,36 +316,6 @@ function App() {
             />
             Embeds
           </label>
-        </div>
-        <div className="vertical-group">
-          <div>
-            <label>
-              Videos per channel{' '}
-              <input
-                type="number"
-                value={perChannelQueryCount}
-                onChange={handlePerChannelQueryCountChange}
-                min="1"
-                max="50"
-              />
-            </label>
-          </div>
-          <div>
-            <label>
-              Months of history{' '}
-              <input
-                type="number"
-                value={historyMonths}
-                onChange={handleHistoryMonthsChange}
-                min="1"
-                max="9"
-              />
-            </label>
-          </div>
-        </div>
-        <div className="vertical-group">
-          <button onClick={resetAPITimer}>Force refresh</button>
-          <button onClick={resetVideos}>Purge cache</button>
         </div>
       </div>
       {loading && <p>Loading videos...</p>}
@@ -477,7 +448,39 @@ function App() {
           )}
         </div>
       )}
-      <div>Made with &#x2665; by <a href="https://andrewbackhouse.com/" target="_blank">Andrew</a></div>
+      <div className="channel-controls">
+      <div className="vertical-group">
+          <div>
+            <label>
+              Videos per channel{' '}
+              <input
+                type="number"
+                value={perChannelQueryCount}
+                onChange={handlePerChannelQueryCountChange}
+                min="1"
+                max="50"
+              />
+            </label>
+          </div>
+          <div>
+            <label>
+              Months of history{' '}
+              <input
+                type="number"
+                value={historyMonths}
+                onChange={handleHistoryMonthsChange}
+                min="1"
+                max="9"
+              />
+            </label>
+          </div>
+        </div>
+        <div className="vertical-group">
+          <button onClick={resetAPITimer}>Force refresh</button>
+          <button onClick={resetVideos}>Purge cache</button>
+        </div>
+      </div>
+      <div style={{ paddingTop: '2rem' }}>Made with &#x2665; by <a href="https://andrewbackhouse.com/" target="_blank">Andrew</a></div>
     </main>
   );
 }
