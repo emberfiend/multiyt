@@ -33,7 +33,8 @@ function App() {
     return parseInt(localStorage.getItem('historyMonths') || '3', 10);
   });
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+  const itemsPerPageThumbs = 8;
+  const itemsPerPageEmbeds = 4;
 
   const apiKey = 'AIzaSyAm9PqXUWUL7r-uEWL0OAmnZ3kL8oFyV0M';
 
@@ -254,7 +255,9 @@ function App() {
     setCurrentPage(newPage);
   };
 
-  const paginatedVideos = videos.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedVideos = viewMode === 'thumbnails'
+    ? videos.slice((currentPage - 1) * itemsPerPageThumbs, currentPage * itemsPerPageThumbs)
+    : videos.slice((currentPage - 1) * itemsPerPageEmbeds, currentPage * itemsPerPageEmbeds);
 
   return (
     <main>
@@ -387,7 +390,7 @@ function App() {
                 ))}
               </div>
               <div className="pagination">
-                {Array.from({ length: Math.ceil(videos.length / itemsPerPage) }, (_, index) => (
+                {Array.from({ length: Math.ceil(videos.length / itemsPerPageEmbeds) }, (_, index) => (
                   <button
                     key={index + 1}
                     onClick={() => handlePageChange(index + 1)}
@@ -425,7 +428,7 @@ function App() {
                 ))}
               </div>
               <div className="pagination">
-                {Array.from({ length: Math.ceil(videos.length / itemsPerPage) }, (_, index) => (
+                {Array.from({ length: Math.ceil(videos.length / itemsPerPageThumbs) }, (_, index) => (
                   <button
                     key={index + 1}
                     onClick={() => handlePageChange(index + 1)}
