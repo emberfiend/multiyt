@@ -16,10 +16,10 @@
 }
 
 input:not([type="radio"]):not([type="checkbox"]) {
-  width: 20%;
   background-color: transparent; /* Clear background color */
   border: 1px solid #ccc; /* Add a border for better visibility */
-  padding: 0.5rem; /* Add some padding */
+  padding: 0.2rem; /* Add some padding */
+  margin: 0.1rem;
   color: inherit; /* Inherit text color */
 }
 
@@ -108,19 +108,6 @@ button:focus-visible {
   opacity: 0.3;
 }
 
-.view-selector {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0rem;
-}
-
-.view-selector label {
-  display: flex;
-  align-items: center;
-  gap: 0rem; /* Add space between radio and text */
-}
-
 .list-view {
   width: 90%;
 }
@@ -207,21 +194,16 @@ button:focus-visible {
 .channel-controls {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 1.2rem;
   text-wrap: nowrap;
   font-size: 0.7em;
 }
 
-.hidden-controls {
+.channel-controls .vertical-group {
   display: flex;
-  /*visibility: hidden;*/
-  align-items: center;
-  gap: 0.5rem;
+  flex-direction: column;
+  /*gap: 0.5rem;*/
 }
-
-/*.channel-controls:hover .hidden-controls {
-  visibility: visible;
-}*/
 
 .tiled-view,
 .thumbnails-view {

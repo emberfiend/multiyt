@@ -274,50 +274,52 @@ function App() {
         ))}
       </div>
       <div className="channel-controls">
-        <input
-          type="text"
-          placeholder="Enter new channel identifier"
-          ref={inputRef}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              handleAddChannel(inputRef.current?.value || '');
-            }
-          }}
-        />
-        <button onClick={() => handleAddChannel(inputRef.current?.value || '')}>Add channel</button>
-        <div className="hidden-controls">
-          <div className="view-selector">
-            <label>
-              <input
-                type="radio"
-                value="list"
-                checked={viewMode === 'list'}
-                onChange={handleViewModeChange}
-              />
-              List
-            </label>
-            <label>
-              <input
-                type="radio"
-                value="thumbnails"
-                checked={viewMode === 'thumbnails'}
-                onChange={handleViewModeChange}
-              />
-              Thumbs
-            </label>
-            <label>
-              <input
-                type="radio"
-                value="tiled"
-                checked={viewMode === 'tiled'}
-                onChange={handleViewModeChange}
-              />
-              Embeds
-            </label>
-          </div>
+        <div className="vertical-group"> { /* posterity: style={{ display: 'flex', flexDirection: 'column' }} */ }
+          <input
+            type="text"
+            placeholder="Enter new channel identifier"
+            ref={inputRef}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                handleAddChannel(inputRef.current?.value || '');
+              }
+            }}
+          />
+          <button onClick={() => handleAddChannel(inputRef.current?.value || '')}>Add channel</button>
+        </div>
+        <div className="vertical-group">
+          <label>
+            <input
+              type="radio"
+              value="list"
+              checked={viewMode === 'list'}
+              onChange={handleViewModeChange}
+            />
+            List
+          </label>
+          <label>
+            <input
+              type="radio"
+              value="thumbnails"
+              checked={viewMode === 'thumbnails'}
+              onChange={handleViewModeChange}
+            />
+            Thumbs
+          </label>
+          <label>
+            <input
+              type="radio"
+              value="tiled"
+              checked={viewMode === 'tiled'}
+              onChange={handleViewModeChange}
+            />
+            Embeds
+          </label>
+        </div>
+        <div className="vertical-group">
           <div>
             <label>
-              Videos per channel
+              Videos per channel{' '}
               <input
                 type="number"
                 value={perChannelQueryCount}
@@ -329,7 +331,7 @@ function App() {
           </div>
           <div>
             <label>
-              Months of history
+              Months of history{' '}
               <input
                 type="number"
                 value={historyMonths}
@@ -339,6 +341,8 @@ function App() {
               />
             </label>
           </div>
+        </div>
+        <div className="vertical-group">
           <button onClick={resetAPITimer}>Force refresh</button>
           <button onClick={resetVideos}>Purge cache</button>
         </div>
