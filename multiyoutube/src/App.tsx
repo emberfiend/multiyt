@@ -32,8 +32,10 @@ function App() {
   const [historyMonths, setHistoryMonths] = useState<number>(() => {
     return parseInt(localStorage.getItem('historyMonths') || '3', 10);
   });
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPageThumbs = 8;
+  const [currentPage, setCurrentPage] = useState<number>(() => {
+    return parseInt(localStorage.getItem('currentPage') || '1', 10);
+  });
+  const itemsPerPageThumbs = 12;
   const itemsPerPageEmbeds = 4;
 
   const apiKey = 'AIzaSyAm9PqXUWUL7r-uEWL0OAmnZ3kL8oFyV0M';
@@ -253,6 +255,7 @@ function App() {
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
+    localStorage.setItem('currentPage', newPage.toString());
   };
 
   const paginatedVideos = viewMode === 'thumbnails'
@@ -296,20 +299,20 @@ function App() {
             <label>
               <input
                 type="radio"
-                value="tiled"
-                checked={viewMode === 'tiled'}
-                onChange={handleViewModeChange}
-              />
-              Embeds
-            </label>
-            <label>
-              <input
-                type="radio"
                 value="thumbnails"
                 checked={viewMode === 'thumbnails'}
                 onChange={handleViewModeChange}
               />
               Thumbs
+            </label>
+            <label>
+              <input
+                type="radio"
+                value="tiled"
+                checked={viewMode === 'tiled'}
+                onChange={handleViewModeChange}
+              />
+              Embeds
             </label>
           </div>
           <div>
@@ -355,9 +358,7 @@ function App() {
                       rel="noopener noreferrer"
                     >
                       {video.title}
-                    </a>{' '}
-                     - {video.channelTitle} - {' '}
-                    {new Date(video.publishedAt).toLocaleDateString('en-GB')}
+                    </a> - {video.channelTitle} - {new Date(video.publishedAt).toLocaleDateString('en-GB')}
                   </span>
                   <input
                     type="checkbox"
@@ -371,21 +372,22 @@ function App() {
             <div>
               <div className="video-grid">
                 {paginatedVideos.map((video) => (
-                  <div key={video.id} className={video.hasBeenWatched ? 'video-tile-watched' : 'video-tile'}>
+                  <div key={video.id} className={`video-tile ${video.hasBeenWatched ? 'video-tile-watched' : ''}`}>
                     <input
                       type="checkbox"
                       checked={video.hasBeenWatched}
                       onChange={() => handleWatchedChange(video.id)}
                     />
+                    <p className="video-tile-header">{video.channelTitle.substring(0,25).trim()} - {new Date(video.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>
                     <iframe
                       width="240"
-                      height="155"
+                      height="135"
                       src={`https://www.youtube.com/embed/${video.id}`}
                       title={video.title}
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
                     ></iframe>
-                    <p>{video.title} (from {video.channelTitle})</p>
+                    <p>{video.title}</p>
                   </div>
                 ))}
               </div>
@@ -403,27 +405,39 @@ function App() {
             </div>
           ) : (
             <div>
+              <div className="pagination">
+                {Array.from({ length: Math.ceil(videos.length / itemsPerPageThumbs) }, (_, index) => (
+                  <button
+                    key={index + 1}
+                    onClick={() => handlePageChange(index + 1)}
+                    disabled={currentPage === index + 1}
+                  >
+                    {index + 1}
+                  </button>
+                ))}
+              </div>
               <div className="video-grid">
                 {paginatedVideos.map((video) => (
-                  <div key={video.id} className={video.hasBeenWatched ? 'video-tile-watched' : 'video-tile'}>
+                  <div key={video.id} className={`video-tile ${video.hasBeenWatched ? 'video-tile-watched' : ''}`}>
                     <input
                       type="checkbox"
                       checked={video.hasBeenWatched}
                       onChange={() => handleWatchedChange(video.id)}
                     />
+                    <p className="video-tile-header">{video.channelTitle.substring(0,25).trim()} - {new Date(video.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>
                     <a
                       href={`https://www.youtube.com/watch?v=${video.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
                       <img
-                        src={`https://img.youtube.com/vi/${video.id}/hqdefault.jpg`}
+                        src={`https://img.youtube.com/vi/${video.id}/mqdefault.jpg`} /* also sd, hq */
                         alt={video.title}
                         width="240"
-                        height="155"
+                        height="135"
                       />
                     </a>
-                    <p>{video.title} (from {video.channelTitle})</p>
+                    <p>{video.title}</p>
                   </div>
                 ))}
               </div>

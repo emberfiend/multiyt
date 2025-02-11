@@ -94,20 +94,25 @@ button:focus-visible {
   align-items: center;
 }
 
+.video-tile p {
+  margin: 0.3rem 0;
+}
+
+.video-tile-header {
+  /* disallow wrapping to second line */
+  white-space: nowrap;
+}
+
 .video-tile-watched {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  /* desaturate the entire element */
   filter: grayscale(100%);
-  /* lighten the entire element */
   opacity: 0.3;
 }
 
 .view-selector {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  gap: 0;
 }
 
 .list-view ul {
@@ -213,7 +218,7 @@ button:focus-visible {
   display: flex;
   justify-content: center;
   flex-wrap: wrap; /* Allow buttons to wrap to the next line */
-  margin-top: 1rem;
+  margin: 1rem;
   max-width: 100%; /* Constrain to container's width */
   overflow: hidden; /* Prevent overflow */
 }
@@ -228,7 +233,6 @@ button:focus-visible {
 
 .pagination button:disabled {
   background-color: #ddd;
-  cursor: not-allowed;
 }
 
 @media (max-width: 600px) {
