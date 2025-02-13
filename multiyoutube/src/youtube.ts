@@ -5,7 +5,9 @@ export interface Video {
   channelTitle: string;
   channelId: string;
   hasBeenWatched: boolean;
-  channelIdHumanReadable: string; // Add the new property
+  channelIdHumanReadable: string;
+  duration: string;
+  isShort: boolean;
 }
 
 // Note: Initialization and loading of the API client will now happen in App.tsx, so these have been moved
@@ -144,14 +146,26 @@ async function getVideosFromPlaylist(
         const channelId = item.snippet?.channelId;
 
         if (videoId && title && publishedAt && channelTitle && channelId) {
+          const videoDetailsResponse = await gapi.client.youtube.videos.list({
+            part: 'contentDetails',
+            id: videoId,
+            key: apiKey,
+          });
+
+          const videoDetails = videoDetailsResponse.result.items?.[0]?.contentDetails;
+          const duration = videoDetails?.duration || '';
+          const isShort = parseDuration(duration) <= 62;
+
           videos.push({
             id: videoId,
             title,
             publishedAt,
             channelTitle,
             channelId,
-            hasBeenWatched: false, // Set hasBeenWatched to false
-            channelIdHumanReadable: '' // Initialize channelIdHumanReadable
+            hasBeenWatched: false,
+            channelIdHumanReadable: '',
+            duration,
+            isShort,
           });
         }
       }
@@ -162,4 +176,15 @@ async function getVideosFromPlaylist(
   } while (nextPageToken && maxResults > 0);
 
   return videos;
+}
+
+function parseDuration(duration: string): number {
+  const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
+  if (!match) return 0;
+
+  const hours = parseInt(match[1] || '0', 10);
+  const minutes = parseInt(match[2] || '0', 10);
+  const seconds = parseInt(match[3] || '0', 10);
+
+  return hours * 3600 + minutes * 60 + seconds;
 }

@@ -50,10 +50,31 @@ function App() {
   });
   const itemsPerPageThumbs = 12;
   const itemsPerPageEmbeds = 4;
+  const itemsPerPageList = 24;
 
   const [apiKey, setApiKey] = useState<string>(() => {
     return localStorage.getItem('apiKey') || 'AIzaSyAm9PqXUWUL7r-uEWL0OAmnZ3kL8oFyV0M';
   });
+
+  const [hideShorts, setHideShorts] = useState<boolean>(() => {
+    return localStorage.getItem('hideShorts') === 'true';
+  });
+
+  const [hideWatched, setHideWatched] = useState<boolean>(() => {
+    return localStorage.getItem('hideWatched') === 'true';
+  });
+
+  const handleHideShortsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = event.target.checked;
+    setHideShorts(newValue);
+    localStorage.setItem('hideShorts', newValue.toString());
+  };
+
+  const handleHideWatchedChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = event.target.checked;
+    setHideWatched(newValue);
+    localStorage.setItem('hideWatched', newValue.toString());
+  };
 
   const handleApiKeyChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newKey = event.target.value;
@@ -287,9 +308,17 @@ function App() {
     localStorage.setItem('currentPage', newPage.toString());
   };
 
+  const filteredVideos = videos.filter(video => {
+    if (hideShorts && video.isShort) return false;
+    if (hideWatched && video.hasBeenWatched) return false;
+    return true;
+  });
+
   const paginatedVideos = viewMode === 'thumbnails'
-    ? videos.slice((currentPage - 1) * itemsPerPageThumbs, currentPage * itemsPerPageThumbs)
-    : videos.slice((currentPage - 1) * itemsPerPageEmbeds, currentPage * itemsPerPageEmbeds);
+    ? filteredVideos.slice((currentPage - 1) * itemsPerPageThumbs, currentPage * itemsPerPageThumbs)
+    : viewMode === 'tiled'
+    ? filteredVideos.slice((currentPage - 1) * itemsPerPageEmbeds, currentPage * itemsPerPageEmbeds)
+    : filteredVideos.slice((currentPage - 1) * itemsPerPageList, currentPage * itemsPerPageList);
 
   return (
     <main>
@@ -344,6 +373,22 @@ function App() {
             />
             Embeds
           </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={hideShorts}
+              onChange={handleHideShortsChange}
+            />
+            Hide shorts
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={hideWatched}
+              onChange={handleHideWatchedChange}
+            />
+            Hide watched
+          </label>
         </div>
       </div>
       {loading && <p>Loading videos...</p>}
@@ -351,27 +396,51 @@ function App() {
       {/*!loading && */!error && (
         <div className={viewMode === 'list' ? 'list-view' : 'tiled-view'}>
           {viewMode === 'list' ? (
-            <ul>
-              {videos.map((video) => (
-                <li key={video.id} className={video.hasBeenWatched ? 'checked' : ''}>
-                  <span className="list-view-item">
-                    {video.channelTitle.substring(0,25).trim()} - {new Date(video.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - {' '}
-                    <a
-                      href={`https://www.youtube.com/watch?v=${video.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {video.title}
-                    </a>
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={video.hasBeenWatched}
-                    onChange={() => handleWatchedChange(video.id)}
-                  />
-                </li>
-              ))}
-            </ul>
+            <div>
+              <div className="pagination">
+                {Array.from({ length: Math.ceil(filteredVideos.length / itemsPerPageList) }, (_, index) => (
+                  <button
+                    key={index + 1}
+                    onClick={() => handlePageChange(index + 1)}
+                    disabled={currentPage === index + 1}
+                  >
+                    {index + 1}
+                  </button>
+                ))}
+              </div>
+              <ul>
+                {paginatedVideos.map((video) => (
+                  <li key={video.id} className={video.hasBeenWatched ? 'checked' : ''}>
+                    <span className="list-view-item">
+                      {video.channelTitle.substring(0,25).trim()} - {new Date(video.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - {' '}
+                      <a
+                        href={`https://www.youtube.com/watch?v=${video.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {video.title}
+                      </a>
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={video.hasBeenWatched}
+                      onChange={() => handleWatchedChange(video.id)}
+                    />
+                  </li>
+                ))}
+              </ul>
+              <div className="pagination">
+                {Array.from({ length: Math.ceil(filteredVideos.length / itemsPerPageList) }, (_, index) => (
+                  <button
+                    key={index + 1}
+                    onClick={() => handlePageChange(index + 1)}
+                    disabled={currentPage === index + 1}
+                  >
+                    {index + 1}
+                  </button>
+                ))}
+              </div>
+            </div>
           ) : viewMode === 'tiled' ? (
             <div>
               <div className="video-grid">
@@ -412,7 +481,7 @@ function App() {
                 ))}
               </div>
               <div className="pagination">
-                {Array.from({ length: Math.ceil(videos.length / itemsPerPageEmbeds) }, (_, index) => (
+                {Array.from({ length: Math.ceil(filteredVideos.length / itemsPerPageEmbeds) }, (_, index) => (
                   <button
                     key={index + 1}
                     onClick={() => handlePageChange(index + 1)}
@@ -426,7 +495,7 @@ function App() {
           ) : (
             <div>
               <div className="pagination">
-                {Array.from({ length: Math.ceil(videos.length / itemsPerPageThumbs) }, (_, index) => (
+                {Array.from({ length: Math.ceil(filteredVideos.length / itemsPerPageThumbs) }, (_, index) => (
                   <button
                     key={index + 1}
                     onClick={() => handlePageChange(index + 1)}
@@ -462,7 +531,7 @@ function App() {
                 ))}
               </div>
               <div className="pagination">
-                {Array.from({ length: Math.ceil(videos.length / itemsPerPageThumbs) }, (_, index) => (
+                {Array.from({ length: Math.ceil(filteredVideos.length / itemsPerPageThumbs) }, (_, index) => (
                   <button
                     key={index + 1}
                     onClick={() => handlePageChange(index + 1)}
