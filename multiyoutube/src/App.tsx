@@ -24,7 +24,7 @@ function App() {
     console.log('merging channels:', localChannels, urlChannels);
     const mergedChannels = [...new Set([...localChannels.split(','), ...(urlChannels ? urlChannels.split(',') : [])])]
       .filter(Boolean)
-      .sort()
+      .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
       .join(',');
     localStorage.setItem('channelIdentifiers', mergedChannels);
     if (mergedChannels !== localChannels) {
@@ -117,7 +117,7 @@ function App() {
             .split(',')
             .map(id => id.trim())
             .filter((id, index, self) => self.indexOf(id) === index)
-            .sort()
+            .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
             .join(',');
           
           setChannelIdentifiers(updatedIdentifiers);
