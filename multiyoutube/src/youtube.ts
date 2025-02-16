@@ -10,65 +10,72 @@ export interface Video {
   isShort: boolean;
 }
 
-// Note: Initialization and loading of the API client will now happen in App.tsx, so these have been moved
-// out of this file.
-// Instead of creating an object to query, the specific query functions will be called directly, with
-// the API key passed each time.
+export interface Channel {
+  humanReadable: string;
+  channelId: string;
+  uploadsPlaylistId: string;
+}
 
-export async function fetchVideos(
-  channelIdentifiers: string,
+export interface FetchResult {
+  videos: Video[];
+  channels: Channel[];
+}
+
+export async function fetchVideosAndUpdateChannels(
+  channels: Channel[],
   perChannelQueryCount: number,
   apiKey: string
-): Promise<Video[]> {
-  const identifiers = channelIdentifiers.split('~');
+): Promise<FetchResult> {
   const allVideos: Video[] = [];
-
-  for (const identifier of identifiers) {
+  
+  for (const channel of channels) {
     try {
-      // 1. Determine if the identifier is a username or channel ID
-      let channelId = identifier; // Assume it's a channel ID initially
-      const channelIdHumanReadable = identifier; // Store the human-readable identifier
-      if (!identifier.startsWith('UC') && !identifier.startsWith('UU')) {
-        // Likely a username, fetch the channel ID
-        console.log(`Fetching channel ID for username: ${identifier}`);
-        channelId = await getChannelIdFromUsername(identifier, apiKey);
+      let { channelId, uploadsPlaylistId } = channel;
+      //const channelIndex = updatedChannels.findIndex(c => c.humanReadable === channel.humanReadable);
+
+      if (!channelId) {
+        console.log(`Fetching channel ID for ${channel.humanReadable}`);
+        channelId = await getChannelIdFromUsername(channel.humanReadable, apiKey);
+        // updatedChannels[channelIndex].channelId = channelId;
+        channel.channelId = channelId;
       }
 
-      // 2. Get the uploads playlist ID
-      const uploadsPlaylistId = await getUploadsPlaylistId(channelId, apiKey);
+      if (!uploadsPlaylistId) {
+        console.log(`Fetching uploads playlist ID for ${channel.humanReadable}`);
+        uploadsPlaylistId = await getUploadsPlaylistId(channelId, apiKey);
+        // updatedChannels[channelIndex].uploadsPlaylistId = uploadsPlaylistId;
+        channel.uploadsPlaylistId = uploadsPlaylistId;
+      }
 
-      // 3. Fetch videos from the uploads playlist
+      console.log(`Fetching videos for ${channel.humanReadable}`);
       const videos = await getVideosFromPlaylist(
         uploadsPlaylistId,
         perChannelQueryCount,
         apiKey
       );
-      allVideos.push(...videos.map(video => ({ ...video, hasBeenWatched: false, channelIdHumanReadable }))); // Set hasBeenWatched to false and channelIdHumanReadable
+      allVideos.push(...videos.map(video => ({ ...video, hasBeenWatched: false, channelIdHumanReadable: channel.humanReadable })));
     } catch (error) {
-      console.error(`Error fetching videos for channel ${identifier}:`, error);
-      // Handle errors as needed (e.g., skip the channel, retry, etc.)
+      console.error(`Error fetching videos for channel ${channel.humanReadable}:`, error);
     }
   }
 
-  // 4. Sort all videos by publication date (descending)
   allVideos.sort(
     (a, b) =>
       new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
   );
-
-  return allVideos;
+  
+  return { videos: allVideos, channels: channels };
 }
 
 async function getChannelIdFromUsername(
   username: string,
   apiKey: string
 ): Promise<string> {
-    const response = await gapi.client.youtube.channels.list({
-      part: 'id',
-      // identifier options are: id, forHandle, forUsername
-      forHandle: username, 
-      key: apiKey,
-    });
+  const response = await gapi.client.youtube.channels.list({
+    part: 'id',
+    forHandle: username,
+    key: apiKey,
+  });
 
   const channel = response.result.items?.[0];
   if (!channel) {
@@ -81,11 +88,11 @@ async function getUploadsPlaylistId(
   channelId: string,
   apiKey: string
 ): Promise<string> {
-    const response = await gapi.client.youtube.channels.list({
-        part: 'contentDetails',
-        id: channelId,
-        key: apiKey,
-      });
+  const response = await gapi.client.youtube.channels.list({
+    part: 'contentDetails',
+    id: channelId,
+    key: apiKey,
+  });
 
   const channel = response.result.items?.[0];
   if (!channel) {
@@ -98,7 +105,6 @@ async function getUploadsPlaylistId(
   }
   return uploadsPlaylistId;
 }
-
 
 interface PlaylistItem {
   snippet?: {

@@ -1,14 +1,19 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { fetchVideos, Video } from './youtube';
+import { fetchVideosAndUpdateChannels, Video, Channel, FetchResult } from './youtube';
 //import { channel } from 'diagnostics_channel';
 
-interface VideoWithWatched extends Video {
-  hasBeenWatched: boolean;
-  channelIdHumanReadable: string; // Add the new property
-}
-
 function App() {
-  const [videos, setVideos] = useState<VideoWithWatched[]>(() => {
+  const mergeChannels = (localChannels: Channel[], urlChannels: string[]): Channel[] => {
+    const merged = [...localChannels];
+    for (const urlChannel of urlChannels) {
+      if (!merged.some(channel => channel.humanReadable === urlChannel)) {
+        merged.push({ humanReadable: urlChannel, channelId: '', uploadsPlaylistId: '' });
+      }
+    }
+    return merged.sort((a, b) => a.humanReadable.toLowerCase().localeCompare(b.humanReadable.toLowerCase()));
+  };
+
+  const [videos, setVideos] = useState<Video[]>(() => {
     const savedVideos = localStorage.getItem('videos');
     return savedVideos ? JSON.parse(savedVideos) : [];
   });
@@ -17,20 +22,13 @@ function App() {
   const [lastAPICall, setLastAPICall] = useState<number>(() => {
     return parseInt(localStorage.getItem('lastAPICall') || '0', 10);
   });
-  const [channelIdentifiers, setChannelIdentifiers] = useState<string>(() => {
+  const [channels, setChannels] = useState<Channel[]>(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const urlChannels = urlParams.get('channels') || ''; // decodeURIComponent(urlParams.get('channels') || '');
-    console.log('urlChannels:', urlChannels);
-    const localChannels = localStorage.getItem('channelIdentifiers') || 'HGModernism~Paul.Sellers~ZeFrank';
-    console.log('localChannels:', localChannels);
-    console.log('merging channels:', localChannels, urlChannels);
-    const mergedChannels = [...new Set([...localChannels.split('~'), ...(urlChannels ? urlChannels.split('~') : [])])]
-      .filter(Boolean)
-      .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
-      .join('~');
-    console.log('mergedChannels:', mergedChannels);
-    localStorage.setItem('channelIdentifiers', mergedChannels);
-    if (mergedChannels !== localChannels) {
+    const urlChannels = urlParams.get('channels') || 'HGModernism~Paul.Sellers~ZeFrank';
+    const localChannels = localStorage.getItem('channels') || '[]';
+    const mergedChannels = mergeChannels(JSON.parse(localChannels), urlChannels.split('~'));
+    localStorage.setItem('channels', JSON.stringify(mergedChannels));
+    if (mergedChannels.length !== JSON.parse(localChannels).length) {
       setLastAPICall(0);
       localStorage.setItem('lastAPICall', '0');
     }
@@ -38,7 +36,7 @@ function App() {
   });
   const [isAddingChannel, setIsAddingChannel] = useState(false);
   const [newChannel, setNewChannel] = useState<string | null>(null);
-  //const [inputValue, setInputValue] = useState<string>(channelIdentifiers);
+  //const [inputValue, setInputValue] = useState<string>(channels);
   const [viewMode, setViewMode] = useState<string>(() => {
     return localStorage.getItem('viewMode') || 'list';
   });
@@ -112,7 +110,7 @@ function App() {
 
     const fetchData = async () => {
       const now = Date.now();
-      const volumeScalar = Math.floor(perChannelQueryCount / 10) + 1 * channelIdentifiers.split('~').length;
+      const volumeScalar = Math.floor(perChannelQueryCount / 10) + 1 * channels.length;
       const cullTimer = volumeScalar * 10 * 60 * 1000;
       console.log('Volume scalar is', volumeScalar, 'with an API hit timer of', cullTimer / 60000, 'minutes');
       if (!isAddingChannel && now - lastAPICall < cullTimer) {
@@ -134,32 +132,43 @@ function App() {
             });
           });
         }
-        const toFetch = isAddingChannel ? newChannel! : channelIdentifiers;
+        //const toFetch = isAddingChannel ? newChannel! : channels.map(channel => channel.humanReadable).join('~');
+        const toFetch = isAddingChannel ? [{ humanReadable: newChannel!, channelId: '', uploadsPlaylistId: '' }] : channels;
 
-        if (isAddingChannel && newChannel) {
-          const updatedIdentifiers = (channelIdentifiers + '~' + newChannel)
-            .split('~')
-            .map(id => id.trim())
-            .filter((id, index, self) => self.indexOf(id) === index)
-            .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
-            .join('~');
+        /*if (isAddingChannel && newChannel) {
+          const updatedIdentifiers = mergeChannels(channels, [newChannel]);
           
-          setChannelIdentifiers(updatedIdentifiers);
-          localStorage.setItem('channelIdentifiers', updatedIdentifiers);
+          setChannels(updatedIdentifiers);
+          localStorage.setItem('channels', JSON.stringify(updatedIdentifiers));
           setIsAddingChannel(false);
           setNewChannel(null);
         } else {
           // we want loading a single channel to not reset the timer, so this is only done here
           setLastAPICall(now);
           localStorage.setItem('lastAPICall', now.toString());
-        }
+        }*/
 
-        const fetchedVideos = await fetchVideos(
+        const result: FetchResult = await fetchVideosAndUpdateChannels(
           toFetch,
           perChannelQueryCount,
           apiKey
         );
-        const fetchedVideosWithWatched = fetchedVideos.map(video => ({
+        setLastAPICall(now);
+        localStorage.setItem('lastAPICall', now.toString());
+        if (isAddingChannel && newChannel) {
+          setIsAddingChannel(false);
+        }
+        console.log('Old channels:', channels);
+        console.log('Updated channels:', result.channels);
+        //const newChannels: Channel[] = isAddingChannel ? [...channels, result.channels] : result.channels;
+        const newChannels: Channel[] = isAddingChannel 
+          ? [...channels, ...(Array.isArray(result.channels) ? result.channels : [result.channels])] 
+          : Array.isArray(result.channels) ? result.channels : [result.channels];
+        
+        newChannels.sort((a, b) => a.humanReadable.toLowerCase().localeCompare(b.humanReadable.toLowerCase()))
+        setChannels(newChannels);
+        localStorage.setItem('channels', JSON.stringify(result.channels))
+        const fetchedVideosWithWatched = result.videos.map(video => ({
           ...video,
           hasBeenWatched: false,
           channelIdHumanReadable: video.channelIdHumanReadable // Set channelIdHumanReadable
@@ -169,7 +178,7 @@ function App() {
         setVideos((prevVideos) => {
           // concat arrays and deduplicate by video ID
           const mergedVideos = [...prevVideos, ...fetchedVideosWithWatched];
-          const uniqueVideosMap = new Map<string, VideoWithWatched>();
+          const uniqueVideosMap = new Map<string, Video>();
           /*mergedVideos.forEach(video => {
             uniqueVideosMap.set(video.id, video);
           });*/
@@ -201,7 +210,7 @@ function App() {
     initializeGapi();
   }, 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  [lastAPICall, videos, perChannelQueryCount, newChannel, isAddingChannel, historyMonths]); // channelIdentifiers omitted
+  [lastAPICall, videos, perChannelQueryCount, newChannel, isAddingChannel, historyMonths]); // channels omitted
 
   // Handle channel identifier changes (now extracts value from event)
   const handleAddChannel = (newChannel: string) => {
@@ -219,7 +228,7 @@ function App() {
     localStorage.setItem('lastAPICall', '0');
   };
 
-  const cullOldVideos = useCallback((videos: VideoWithWatched[]) => {
+  const cullOldVideos = useCallback((videos: Video[]) => {
     const dateInPast = new Date();
     dateInPast.setMonth(dateInPast.getMonth() - historyMonths);
     const culledVideos = videos.filter(video => new Date(video.publishedAt) > dateInPast);
@@ -241,12 +250,12 @@ function App() {
   }, [historyMonths, cullOldVideos]);
 
   useEffect(() => {
+    console.log('Updating URL and localStorage with channels:', channels);
     const urlParams = new URLSearchParams(window.location.search);
-    // urlParams.set('channels', encodeURIComponent(channelIdentifiers));
-    urlParams.set('channels', channelIdentifiers);
+    urlParams.set('channels', channels.map(channel => channel.humanReadable).join('~'));
     window.history.replaceState(null, '', `?${urlParams.toString()}`);
-    localStorage.setItem('channelIdentifiers', channelIdentifiers);
-  }, [channelIdentifiers]);
+    localStorage.setItem('channels', JSON.stringify(channels));
+  }, [channels]);
 
   const handleViewModeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newViewMode = event.target.value;
@@ -289,13 +298,9 @@ function App() {
   };
 
   const handleRemoveChannel = (channel: string) => {
-    const newIdentifiers = channelIdentifiers
-      .split('~')
-      .filter((id) => id.trim() !== channel)
-      .join('~');
-    console.log('Removing channel', channel + ':', channelIdentifiers, + ':' + newIdentifiers);
-    setChannelIdentifiers(newIdentifiers);
-    localStorage.setItem('channelIdentifiers', newIdentifiers);
+    const newIdentifiers = channels.filter(c => c.humanReadable !== channel);
+    setChannels(newIdentifiers);
+    localStorage.setItem('channels', JSON.stringify(newIdentifiers));
     
     // remove videos created by said channel from state
     setVideos((prevVideos) => prevVideos.filter(video => video.channelIdHumanReadable !== channel));
@@ -329,10 +334,10 @@ function App() {
     <main>
       <h1>MultiYT</h1>
       <div className="channel-list">
-        {channelIdentifiers.split('~').map((channel) => (
-          <span key={channel} className="channel-item">
-            {channel}
-            <button onClick={() => handleRemoveChannel(channel)}>x</button>
+        {channels.map((channel) => (
+          <span key={channel.humanReadable} className="channel-item">
+            {channel.humanReadable}
+            <button onClick={() => handleRemoveChannel(channel.humanReadable)}>x</button>
           </span>
         ))}
       </div>
