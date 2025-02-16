@@ -20,7 +20,7 @@ export async function fetchVideos(
   perChannelQueryCount: number,
   apiKey: string
 ): Promise<Video[]> {
-  const identifiers = channelIdentifiers.split(',');
+  const identifiers = channelIdentifiers.split('~');
   const allVideos: Video[] = [];
 
   for (const identifier of identifiers) {

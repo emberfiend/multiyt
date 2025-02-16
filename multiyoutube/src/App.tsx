@@ -19,13 +19,16 @@ function App() {
   });
   const [channelIdentifiers, setChannelIdentifiers] = useState<string>(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const urlChannels = decodeURIComponent(urlParams.get('channels') || '');
-    const localChannels = localStorage.getItem('channelIdentifiers') || '';
+    const urlChannels = urlParams.get('channels') || ''; // decodeURIComponent(urlParams.get('channels') || '');
+    console.log('urlChannels:', urlChannels);
+    const localChannels = localStorage.getItem('channelIdentifiers') || 'HGModernism~Paul.Sellers~ZeFrank';
+    console.log('localChannels:', localChannels);
     console.log('merging channels:', localChannels, urlChannels);
-    const mergedChannels = [...new Set([...localChannels.split(','), ...(urlChannels ? urlChannels.split(',') : [])])]
+    const mergedChannels = [...new Set([...localChannels.split('~'), ...(urlChannels ? urlChannels.split('~') : [])])]
       .filter(Boolean)
       .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
-      .join(',');
+      .join('~');
+    console.log('mergedChannels:', mergedChannels);
     localStorage.setItem('channelIdentifiers', mergedChannels);
     if (mergedChannels !== localChannels) {
       setLastAPICall(0);
@@ -109,7 +112,7 @@ function App() {
 
     const fetchData = async () => {
       const now = Date.now();
-      const volumeScalar = Math.floor(perChannelQueryCount / 10) + 1 * channelIdentifiers.split(',').length;
+      const volumeScalar = Math.floor(perChannelQueryCount / 10) + 1 * channelIdentifiers.split('~').length;
       const cullTimer = volumeScalar * 10 * 60 * 1000;
       console.log('Volume scalar is', volumeScalar, 'with an API hit timer of', cullTimer / 60000, 'minutes');
       if (!isAddingChannel && now - lastAPICall < cullTimer) {
@@ -134,12 +137,12 @@ function App() {
         const toFetch = isAddingChannel ? newChannel! : channelIdentifiers;
 
         if (isAddingChannel && newChannel) {
-          const updatedIdentifiers = (channelIdentifiers + ',' + newChannel)
-            .split(',')
+          const updatedIdentifiers = (channelIdentifiers + '~' + newChannel)
+            .split('~')
             .map(id => id.trim())
             .filter((id, index, self) => self.indexOf(id) === index)
             .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
-            .join(',');
+            .join('~');
           
           setChannelIdentifiers(updatedIdentifiers);
           localStorage.setItem('channelIdentifiers', updatedIdentifiers);
@@ -239,7 +242,8 @@ function App() {
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    urlParams.set('channels', encodeURIComponent(channelIdentifiers));
+    // urlParams.set('channels', encodeURIComponent(channelIdentifiers));
+    urlParams.set('channels', channelIdentifiers);
     window.history.replaceState(null, '', `?${urlParams.toString()}`);
     localStorage.setItem('channelIdentifiers', channelIdentifiers);
   }, [channelIdentifiers]);
@@ -286,9 +290,10 @@ function App() {
 
   const handleRemoveChannel = (channel: string) => {
     const newIdentifiers = channelIdentifiers
-      .split(',')
+      .split('~')
       .filter((id) => id.trim() !== channel)
-      .join(',');
+      .join('~');
+    console.log('Removing channel', channel + ':', channelIdentifiers, + ':' + newIdentifiers);
     setChannelIdentifiers(newIdentifiers);
     localStorage.setItem('channelIdentifiers', newIdentifiers);
     
@@ -324,7 +329,7 @@ function App() {
     <main>
       <h1>MultiYT</h1>
       <div className="channel-list">
-        {channelIdentifiers.split(',').map((channel) => (
+        {channelIdentifiers.split('~').map((channel) => (
           <span key={channel} className="channel-item">
             {channel}
             <button onClick={() => handleRemoveChannel(channel)}>x</button>
