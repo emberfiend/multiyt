@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { fetchVideosAndUpdateChannels, Video, Channel, FetchResult } from './youtube';
+import { PageSelector, VideoList, VideoGrid } from './Page';
 //import { channel } from 'diagnostics_channel';
 
 function App() {
@@ -407,150 +408,20 @@ function App() {
         <div className={viewMode === 'list' ? 'list-view' : 'tiled-view'}>
           {viewMode === 'list' ? (
             <div>
-              <div className="pagination">
-                {Array.from({ length: Math.ceil(filteredVideos.length / itemsPerPageList) }, (_, index) => (
-                  <button
-                    key={index + 1}
-                    onClick={() => handlePageChange(index + 1)}
-                    disabled={currentPage === index + 1}
-                  >
-                    {index + 1}
-                  </button>
-                ))}
-              </div>
-              <ul>
-                {paginatedVideos.map((video) => (
-                  <li key={video.id} className={video.hasBeenWatched ? 'checked' : ''}>
-                    <span className="list-view-item">
-                      {video.channelTitle.substring(0,25).trim()} - {new Date(video.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - {' '}
-                      <a
-                        href={`https://www.youtube.com/watch?v=${video.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {video.title}
-                      </a>
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked={video.hasBeenWatched}
-                      onChange={() => handleWatchedChange(video.id)}
-                    />
-                  </li>
-                ))}
-              </ul>
-              <div className="pagination">
-                {Array.from({ length: Math.ceil(filteredVideos.length / itemsPerPageList) }, (_, index) => (
-                  <button
-                    key={index + 1}
-                    onClick={() => handlePageChange(index + 1)}
-                    disabled={currentPage === index + 1}
-                  >
-                    {index + 1}
-                  </button>
-                ))}
-              </div>
+              <PageSelector currentPage={currentPage} itemsTotal={filteredVideos.length} itemsPerPage={itemsPerPageList} newPageHandler={handlePageChange} />
+              <VideoList videos={paginatedVideos} handleWatchedChange={handleWatchedChange} />
+              <PageSelector currentPage={currentPage} itemsTotal={filteredVideos.length} itemsPerPage={itemsPerPageList} newPageHandler={handlePageChange} />
             </div>
           ) : viewMode === 'tiled' ? (
             <div>
-              <div className="video-grid">
-                {paginatedVideos.map((video) => (
-                  <div key={video.id} className={`video-tile ${video.hasBeenWatched ? 'video-tile-watched' : ''}`}>
-                    <input
-                      type="checkbox"
-                      checked={video.hasBeenWatched}
-                      onChange={() => handleWatchedChange(video.id)}
-                    />
-                    <p className="video-tile-header">{video.channelTitle.substring(0,25).trim()} - {new Date(video.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>
-                    {/* in embed view, watched video embeds are replaced by thumbs */}
-                    {video.hasBeenWatched ? (
-                      <a
-                        href={`https://www.youtube.com/watch?v=${video.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <img
-                          src={`https://img.youtube.com/vi/${video.id}/mqdefault.jpg`} /* also sd, hq */
-                          alt={video.title}
-                          width="240"
-                          height="135"
-                        />
-                      </a>
-                    ) : (
-                      <iframe
-                        width="240"
-                        height="135"
-                        src={`https://www.youtube.com/embed/${video.id}`}
-                        title={video.title}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      ></iframe>
-                    )}
-                    <p>{video.title}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="pagination">
-                {Array.from({ length: Math.ceil(filteredVideos.length / itemsPerPageEmbeds) }, (_, index) => (
-                  <button
-                    key={index + 1}
-                    onClick={() => handlePageChange(index + 1)}
-                    disabled={currentPage === index + 1}
-                  >
-                    {index + 1}
-                  </button>
-                ))}
-              </div>
+              <VideoGrid videos={paginatedVideos} handleWatchedChange={handleWatchedChange} embedsMode={true} />
+              <PageSelector currentPage={currentPage} itemsTotal={filteredVideos.length} itemsPerPage={itemsPerPageEmbeds} newPageHandler={handlePageChange} />
             </div>
           ) : (
             <div>
-              <div className="pagination">
-                {Array.from({ length: Math.ceil(filteredVideos.length / itemsPerPageThumbs) }, (_, index) => (
-                  <button
-                    key={index + 1}
-                    onClick={() => handlePageChange(index + 1)}
-                    disabled={currentPage === index + 1}
-                  >
-                    {index + 1}
-                  </button>
-                ))}
-              </div>
-              <div className="video-grid">
-                {paginatedVideos.map((video) => (
-                  <div key={video.id} className={`video-tile ${video.hasBeenWatched ? 'video-tile-watched' : ''}`}>
-                    <input
-                      type="checkbox"
-                      checked={video.hasBeenWatched}
-                      onChange={() => handleWatchedChange(video.id)}
-                    />
-                    <p className="video-tile-header">{video.channelTitle.substring(0,25).trim()} - {new Date(video.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>
-                    <a
-                      href={`https://www.youtube.com/watch?v=${video.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <img
-                        src={`https://img.youtube.com/vi/${video.id}/mqdefault.jpg`} /* also sd, hq */
-                        alt={video.title}
-                        width="240"
-                        height="135"
-                      />
-                    </a>
-                    <p>{video.title}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="pagination">
-                {Array.from({ length: Math.ceil(filteredVideos.length / itemsPerPageThumbs) }, (_, index) => (
-                  <button
-                    key={index + 1}
-                    onClick={() => handlePageChange(index + 1)}
-                    disabled={currentPage === index + 1}
-                  >
-                    {index + 1}
-                  </button>
-                ))}
-              </div>
+              <PageSelector currentPage={currentPage} itemsTotal={filteredVideos.length} itemsPerPage={itemsPerPageThumbs} newPageHandler={handlePageChange} />
+              <VideoGrid videos={paginatedVideos} handleWatchedChange={handleWatchedChange} embedsMode={false} />
+              <PageSelector currentPage={currentPage} itemsTotal={filteredVideos.length} itemsPerPage={itemsPerPageThumbs} newPageHandler={handlePageChange} />
             </div>
           )}
         </div>
