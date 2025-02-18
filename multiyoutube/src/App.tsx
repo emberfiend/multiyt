@@ -38,8 +38,13 @@ function App() {
   const [isAddingChannel, setIsAddingChannel] = useState(false);
   const [newChannel, setNewChannel] = useState<string | null>(null);
   //const [inputValue, setInputValue] = useState<string>(channels);
-  const [viewMode, setViewMode] = useState<string>(() => {
-    return localStorage.getItem('viewMode') || 'list';
+  enum ViewMode {
+    List = 'list',
+    Thumbs = 'thumbs',
+    Embeds = 'embeds'
+  }
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    return localStorage.getItem('viewMode') as ViewMode || ViewMode.List;
   });
   const [perChannelQueryCount, setPerChannelQueryCount] = useState<number>(() => {
     return parseInt(localStorage.getItem('perChannelQueryCount') || '3', 10);
@@ -259,7 +264,7 @@ function App() {
   }, [channels]);
 
   const handleViewModeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newViewMode = event.target.value;
+    const newViewMode = event.target.value as ViewMode;
     setViewMode(newViewMode);
     localStorage.setItem('viewMode', newViewMode);
     setCurrentPage(1);
@@ -325,9 +330,9 @@ function App() {
     return true;
   });
 
-  const paginatedVideos = viewMode === 'thumbnails'
+  const paginatedVideos = viewMode === ViewMode.Thumbs
     ? filteredVideos.slice((currentPage - 1) * itemsPerPageThumbs, currentPage * itemsPerPageThumbs)
-    : viewMode === 'tiled'
+    : viewMode === ViewMode.Embeds
     ? filteredVideos.slice((currentPage - 1) * itemsPerPageEmbeds, currentPage * itemsPerPageEmbeds)
     : filteredVideos.slice((currentPage - 1) * itemsPerPageList, currentPage * itemsPerPageList);
 
@@ -360,8 +365,8 @@ function App() {
           <label>
             <input
               type="radio"
-              value="list"
-              checked={viewMode === 'list'}
+              value={ViewMode.List}
+              checked={viewMode === ViewMode.List}
               onChange={handleViewModeChange}
             />
             List
@@ -369,8 +374,8 @@ function App() {
           <label>
             <input
               type="radio"
-              value="thumbnails"
-              checked={viewMode === 'thumbnails'}
+              value="thumbs"
+              checked={viewMode === ViewMode.Thumbs}
               onChange={handleViewModeChange}
             />
             Thumbs
@@ -378,8 +383,8 @@ function App() {
           <label>
             <input
               type="radio"
-              value="tiled"
-              checked={viewMode === 'tiled'}
+              value="embeds"
+              checked={viewMode === ViewMode.Embeds}
               onChange={handleViewModeChange}
             />
             Embeds
@@ -405,14 +410,14 @@ function App() {
       {loading && <p>Loading videos...</p>}
       {error && <p>Error: {error}</p>}
       {/*!loading && */!error && (
-        <div className={viewMode === 'list' ? 'list-view' : 'tiled-view'}>
-          {viewMode === 'list' ? (
+        <div className={viewMode === ViewMode.List ? 'list-view' : 'tiled-view'}>
+          {viewMode === ViewMode.List ? (
             <div>
               <PageSelector currentPage={currentPage} itemsTotal={filteredVideos.length} itemsPerPage={itemsPerPageList} newPageHandler={handlePageChange} />
               <VideoList videos={paginatedVideos} handleWatchedChange={handleWatchedChange} />
               <PageSelector currentPage={currentPage} itemsTotal={filteredVideos.length} itemsPerPage={itemsPerPageList} newPageHandler={handlePageChange} />
             </div>
-          ) : viewMode === 'tiled' ? (
+          ) : viewMode === ViewMode.Embeds ? (
             <div>
               <VideoGrid videos={paginatedVideos} handleWatchedChange={handleWatchedChange} embedsMode={true} />
               <PageSelector currentPage={currentPage} itemsTotal={filteredVideos.length} itemsPerPage={itemsPerPageEmbeds} newPageHandler={handlePageChange} />
