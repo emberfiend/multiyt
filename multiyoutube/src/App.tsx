@@ -4,6 +4,13 @@ import { PageSelector, VideoList, VideoGrid } from './Page';
 //import { channel } from 'diagnostics_channel';
 
 function App() {
+  
+  // STATE
+
+  const itemsPerPageThumbs = 12;
+  const itemsPerPageEmbeds = 4;
+  const itemsPerPageList = 24;
+
   const mergeChannels = (localChannels: Channel[], urlChannels: string[]): Channel[] => {
     const merged = [...localChannels];
     for (const urlChannel of urlChannels) {
@@ -13,7 +20,6 @@ function App() {
     }
     return merged.sort((a, b) => a.humanReadable.toLowerCase().localeCompare(b.humanReadable.toLowerCase()));
   };
-
   const [videos, setVideos] = useState<Video[]>(() => {
     const savedVideos = localStorage.getItem('videos');
     return savedVideos ? JSON.parse(savedVideos) : [];
@@ -55,39 +61,17 @@ function App() {
   const [currentPage, setCurrentPage] = useState<number>(() => {
     return parseInt(localStorage.getItem('currentPage') || '1', 10);
   });
-  const itemsPerPageThumbs = 12;
-  const itemsPerPageEmbeds = 4;
-  const itemsPerPageList = 24;
-
   const [apiKey, setApiKey] = useState<string>(() => {
     return localStorage.getItem('apiKey') || 'AIzaSyAm9PqXUWUL7r-uEWL0OAmnZ3kL8oFyV0M';
   });
-
   const [hideShorts, setHideShorts] = useState<boolean>(() => {
     return localStorage.getItem('hideShorts') === 'true';
   });
-
   const [hideWatched, setHideWatched] = useState<boolean>(() => {
     return localStorage.getItem('hideWatched') === 'true';
   });
 
-  const handleHideShortsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = event.target.checked;
-    setHideShorts(newValue);
-    localStorage.setItem('hideShorts', newValue.toString());
-  };
-
-  const handleHideWatchedChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = event.target.checked;
-    setHideWatched(newValue);
-    localStorage.setItem('hideWatched', newValue.toString());
-  };
-
-  const handleApiKeyChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newKey = event.target.value;
-    setApiKey(newKey);
-    localStorage.setItem('apiKey', newKey);
-  };
+  // HOOKS
 
   useEffect(() => {
     const initializeGapi = () => {
@@ -218,21 +202,9 @@ function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   [lastAPICall, videos, perChannelQueryCount, newChannel, isAddingChannel, historyMonths]); // channels omitted
 
-  // Handle channel identifier changes (now extracts value from event)
-  const handleAddChannel = (newChannel: string) => {
-    if (!newChannel) return;
-
-    inputRef.current!.value = '';
-  
-    setIsAddingChannel(true);
-    setNewChannel(newChannel);
-  };
-
-  // define resetAPITimer function
-  const resetAPITimer = () => {
-    setLastAPICall(0);
-    localStorage.setItem('lastAPICall', '0');
-  };
+  useEffect(() => {
+    localStorage.setItem('videos', JSON.stringify(videos));
+  }, [videos]);
 
   const cullOldVideos = useCallback((videos: Video[]) => {
     const dateInPast = new Date();
@@ -241,11 +213,6 @@ function App() {
     console.log("Culling", videos.length - culledVideos.length, "videos older than", historyMonths, "months");
     return culledVideos;
   }, [historyMonths])
-
-  // Save videos to localStorage and cull old videos
-  useEffect(() => {
-    localStorage.setItem('videos', JSON.stringify(videos));
-  }, [videos]);
 
   useEffect(() => {
     setVideos(prevVideos => {
@@ -263,11 +230,89 @@ function App() {
     localStorage.setItem('channels', JSON.stringify(channels));
   }, [channels]);
 
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  /* OTHER EFFECTS */
+
+  const resetAPITimer = () => {
+    setLastAPICall(0);
+    localStorage.setItem('lastAPICall', '0');
+  };
+
+  const resetVideos = () => {
+    setVideos([]);
+    localStorage.removeItem('videos');
+  }
+
+  /* STATE REDUCTION */
+
+  const filteredVideos = videos.filter(video => {
+    if (hideShorts && video.isShort) return false;
+    if (hideWatched && video.hasBeenWatched) return false;
+    return true;
+  });
+
+  const paginatedVideos = viewMode === ViewMode.Thumbs
+    ? filteredVideos.slice((currentPage - 1) * itemsPerPageThumbs, currentPage * itemsPerPageThumbs)
+    : viewMode === ViewMode.Embeds
+    ? filteredVideos.slice((currentPage - 1) * itemsPerPageEmbeds, currentPage * itemsPerPageEmbeds)
+    : filteredVideos.slice((currentPage - 1) * itemsPerPageList, currentPage * itemsPerPageList);
+
+  /* HANDLERS - basics */
+
+  const handleRemoveChannel = (channel: string) => {
+    const newIdentifiers = channels.filter(c => c.humanReadable !== channel);
+    setChannels(newIdentifiers);
+    localStorage.setItem('channels', JSON.stringify(newIdentifiers));
+    
+    // remove videos created by said channel from state
+    setVideos((prevVideos) => prevVideos.filter(video => video.channelIdHumanReadable !== channel));
+  };
+
+  const handleAddChannel = (newChannel: string) => {
+    if (!newChannel) return;
+
+    inputRef.current!.value = '';
+  
+    setIsAddingChannel(true);
+    setNewChannel(newChannel);
+  };
+
   const handleViewModeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newViewMode = event.target.value as ViewMode;
     setViewMode(newViewMode);
     localStorage.setItem('viewMode', newViewMode);
     setCurrentPage(1);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    localStorage.setItem('currentPage', newPage.toString());
+  };
+
+  const handleWatchedChange = (videoId: string) => {
+    console.log('Toggling watched status for video', videoId);
+    setVideos((prevVideos) =>
+      prevVideos.map((video) =>
+        video.id === videoId
+          ? { ...video, hasBeenWatched: !video.hasBeenWatched }
+          : video
+      )
+    );
+  };
+
+  /* HANDLERS - settings */
+
+  const handleHideShortsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = event.target.checked;
+    setHideShorts(newValue);
+    localStorage.setItem('hideShorts', newValue.toString());
+  };
+
+  const handleHideWatchedChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = event.target.checked;
+    setHideWatched(newValue);
+    localStorage.setItem('hideWatched', newValue.toString());
   };
 
   const handlePerChannelQueryCountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -292,49 +337,13 @@ function App() {
     localStorage.setItem('historyMonths', newHistoryMonths.toString());
   };
 
-  const handleWatchedChange = (videoId: string) => {
-    console.log('Toggling watched status for video', videoId);
-    setVideos((prevVideos) =>
-      prevVideos.map((video) =>
-        video.id === videoId
-          ? { ...video, hasBeenWatched: !video.hasBeenWatched }
-          : video
-      )
-    );
+  const handleApiKeyChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newKey = event.target.value;
+    setApiKey(newKey);
+    localStorage.setItem('apiKey', newKey);
   };
 
-  const handleRemoveChannel = (channel: string) => {
-    const newIdentifiers = channels.filter(c => c.humanReadable !== channel);
-    setChannels(newIdentifiers);
-    localStorage.setItem('channels', JSON.stringify(newIdentifiers));
-    
-    // remove videos created by said channel from state
-    setVideos((prevVideos) => prevVideos.filter(video => video.channelIdHumanReadable !== channel));
-  };
-
-  const resetVideos = () => {
-    setVideos([]);
-    localStorage.removeItem('videos');
-  }
-
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage);
-    localStorage.setItem('currentPage', newPage.toString());
-  };
-
-  const filteredVideos = videos.filter(video => {
-    if (hideShorts && video.isShort) return false;
-    if (hideWatched && video.hasBeenWatched) return false;
-    return true;
-  });
-
-  const paginatedVideos = viewMode === ViewMode.Thumbs
-    ? filteredVideos.slice((currentPage - 1) * itemsPerPageThumbs, currentPage * itemsPerPageThumbs)
-    : viewMode === ViewMode.Embeds
-    ? filteredVideos.slice((currentPage - 1) * itemsPerPageEmbeds, currentPage * itemsPerPageEmbeds)
-    : filteredVideos.slice((currentPage - 1) * itemsPerPageList, currentPage * itemsPerPageList);
+  /* RENDERING */
 
   return (
     <main>
