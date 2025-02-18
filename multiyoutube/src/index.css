@@ -246,6 +246,11 @@ button:focus-visible {
   background-color: #ddd;
 }
 
+.info {
+  color: grey;
+  text-align: center;
+}
+
 @media (max-width: 600px) {
   .video-grid {
     grid-template-columns: repeat(2, 1fr);

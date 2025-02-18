@@ -595,6 +595,7 @@ function App() {
               style={{ width: '350px' }}
             />
           </label>
+          <div className="info">When my key runs out of quota, you must <a href="https://developers.google.com/youtube/registering_an_application" target='blank'>request your own</a> (free).</div>
         </div>
         <div className="vertical-group">
           <button onClick={resetAPITimer}>Force refresh</button>
