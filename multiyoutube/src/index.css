@@ -114,6 +114,10 @@ button:focus-visible {
   opacity: 0.3;
 }
 
+.list-view {
+  width: 950px;
+}
+
 .list-view-item {
   white-space: nowrap;
   overflow: hidden;
