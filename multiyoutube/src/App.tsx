@@ -151,6 +151,9 @@ function App() {
         console.log('Old channels:', channels);
         console.log('Updated channels:', result.channels);
         //const newChannels: Channel[] = isAddingChannel ? [...channels, result.channels] : result.channels;
+
+        // merge logic duplicated here?
+        // is this even needed? check channnels lifecycle wrt channels and result.channels being identical
         const newChannels: Channel[] = isAddingChannel 
           ? [...channels, ...(Array.isArray(result.channels) ? result.channels : [result.channels])] 
           : Array.isArray(result.channels) ? result.channels : [result.channels];
