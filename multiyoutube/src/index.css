@@ -104,6 +104,10 @@ button:focus-visible {
   grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
 }
 
+.video-grid input[type="checkbox"] {
+  transform: scale(1.2);
+}
+
 .video-tile {
   display: flex;
   flex-direction: column;
@@ -154,6 +158,7 @@ button:focus-visible {
 }
 
 .list-view input[type="checkbox"] {
+  transform: scale(1.2);
   width: 35px; /* Fixed width */
   position: absolute; /* Position it absolutely */
   right: 0; /* Stick to the far right */
@@ -267,8 +272,11 @@ button:focus-visible {
     padding: 0 0.15rem;
   }
 }
-
 @media (max-width: 950px) {
+  .list-view input[type="checkbox"] {
+    transform: scale(1.4);
+  }
+
   .channel-list {
     max-width: 95vw;
     justify-content: center;
@@ -327,7 +335,7 @@ button:focus-visible {
 
 @media (min-width: 951px) and (max-width: 1200px) {
   .video-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
