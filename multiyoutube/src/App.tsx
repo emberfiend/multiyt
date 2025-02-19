@@ -419,7 +419,7 @@ function App() {
           </label>
         </div>
       </div>
-      {loading && <p>Loading videos...</p>}
+      {loading && <p className="loading">Loading videos...</p>}
       {error && <p>Error: {error}</p>}
       {/*!loading && */!error && (
         <div className={viewMode === ViewMode.List ? 'list-view' : 'tiled-view'}>
