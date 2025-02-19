@@ -100,7 +100,7 @@ button:focus-visible {
 
 .video-grid {
   display: grid;
-  gap: 1rem;
+  gap: 0.5rem;
   grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
 }
 
@@ -112,6 +112,7 @@ button:focus-visible {
   display: flex;
   flex-direction: column;
   align-items: center;
+  padding: 0.5em;
 }
 
 .video-tile p {
@@ -126,6 +127,7 @@ button:focus-visible {
 .video-tile-watched {
   filter: grayscale(100%);
   opacity: 0.3;
+  background-color: transparent !important;
 }
 
 .list-view {
@@ -164,7 +166,7 @@ button:focus-visible {
   right: 0; /* Stick to the far right */
 }
 
-.list-view li:nth-child(3n-1) {
+/*.list-view li:nth-child(3n-1) {
   background-color: #d3ddfc;
 }
 
@@ -174,7 +176,7 @@ button:focus-visible {
 
 .list-view li:nth-child(3n-3) {
   background-color: #ffffff;
-}
+}*/
 
 .list-view li.checked {
   font-size: 0.6em; /* Smaller text */
@@ -184,7 +186,7 @@ button:focus-visible {
   a {
     color: #999;
   }
-  background-color: #f5f5dc;
+  background-color: #f5f5dc !important;
 }
 
 .channel-list {
@@ -198,7 +200,6 @@ button:focus-visible {
   display: flex;
   align-items: center;
   padding: 0 0.5rem;
-  background-color: #e0e0e0;
   border-radius: 4px;
 }
 
@@ -208,7 +209,7 @@ button:focus-visible {
   background: none;
   border: none;
   cursor: pointer;
-  color: #ff0000;
+  color: #000;
   font-weight: bold;
 }
 
@@ -277,6 +278,10 @@ button:focus-visible {
     transform: scale(1.4);
   }
 
+  .video-grid input[type="checkbox"] {
+    transform: scale(1.4);
+  }
+
   .channel-list {
     max-width: 95vw;
     justify-content: center;
@@ -328,6 +333,7 @@ button:focus-visible {
     white-space: normal;
     overflow: visible;
   }
+
   .video-grid {
     grid-template-columns: repeat(1, 1fr);
   }

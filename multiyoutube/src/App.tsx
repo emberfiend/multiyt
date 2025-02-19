@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { fetchVideosAndUpdateChannels, Video, Channel, FetchResult } from './youtube';
 import { PageSelector, VideoList, VideoGrid } from './Page';
+import { getColour } from './utility';
 //import { channel } from 'diagnostics_channel';
 
 function App() {
@@ -353,7 +354,7 @@ function App() {
       <h1>MultiYT</h1>
       <div className="channel-list">
         {channels.map((channel) => (
-          <span key={channel.humanReadable} className="channel-item">
+          <span key={channel.humanReadable} className="channel-item" style={{ backgroundColor: getColour(channel.humanReadable) }}>
             {channel.humanReadable}
             <button onClick={() => handleRemoveChannel(channel.humanReadable)}>x</button>
           </span>

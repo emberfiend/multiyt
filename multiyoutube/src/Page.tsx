@@ -1,3 +1,5 @@
+import { getColour } from './utility';
+
 interface PageSelectorProps {
   currentPage: number;
   itemsTotal: number;
@@ -33,7 +35,7 @@ export function VideoList({videos, handleWatchedChange}: VideoProps) {
   return (
     <ul>
       {videos.map((video) => (
-        <li key={video.id} className={video.hasBeenWatched ? 'checked' : ''}>
+        <li key={video.id} className={video.hasBeenWatched ? 'checked' : ''} style={{ backgroundColor: getColour(video.channelTitle) }}>
           <span className="list-view-item">
             {video.channelTitle.substring(0,25).trim()} - {new Date(video.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - {' '}
             <a
@@ -59,7 +61,7 @@ export function VideoGrid({videos, handleWatchedChange, embedsMode = false}: Vid
   return (
     <div className="video-grid">
       {videos.map((video) => (
-        <div key={video.id} className={`video-tile ${video.hasBeenWatched ? 'video-tile-watched' : ''}`}>
+        <div key={video.id} className={`video-tile ${video.hasBeenWatched ? 'video-tile-watched' : ''}`} style={{ backgroundColor: getColour(video.channelTitle) }}>
           <input
             type="checkbox"
             checked={video.hasBeenWatched}
