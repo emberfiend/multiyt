@@ -44,6 +44,9 @@ function App() {
   });
   const [isAddingChannel, setIsAddingChannel] = useState(false);
   const [newChannel, setNewChannel] = useState<string | null>(null);
+  const [filterTerms, setFilterTerms] = useState<string>(() => {
+    return localStorage.getItem('filterTerms') || '';
+  });
   //const [inputValue, setInputValue] = useState<string>(channels);
   enum ViewMode {
     List = 'list',
@@ -253,6 +256,10 @@ function App() {
   const filteredVideos = videos.filter(video => {
     if (hideShorts && video.isShort) return false;
     if (hideWatched && video.hasBeenWatched) return false;
+    if (filterTerms) {
+      const terms = filterTerms.split(',').map(term => term.trim().toLowerCase());
+      if (terms.some(term => term && video.title.toLowerCase().includes(term))) return false;
+    }
     return true;
   });
 
@@ -317,6 +324,12 @@ function App() {
     const newValue = event.target.checked;
     setHideWatched(newValue);
     localStorage.setItem('hideWatched', newValue.toString());
+  };
+
+  const handleFilterTermsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newTerms = event.target.value;
+    setFilterTerms(newTerms);
+    localStorage.setItem('filterTerms', newTerms);
   };
 
   const handlePerChannelQueryCountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -417,6 +430,16 @@ function App() {
               onChange={handleHideWatchedChange}
             />
             Hide watched
+          </label>
+          <label>
+            Filter{' '}
+            <input
+              type="text"
+              value={filterTerms}
+              onChange={handleFilterTermsChange}
+              placeholder="Comma-separated terms"
+              style={{ width: '150px' }}
+            />
           </label>
         </div>
       </div>
