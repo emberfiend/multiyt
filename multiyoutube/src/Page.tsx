@@ -37,7 +37,7 @@ export function VideoList({videos, handleWatchedChange}: VideoProps) {
       {videos.map((video) => (
         <li key={video.id} className={video.hasBeenWatched ? 'checked' : ''} style={{ backgroundColor: getColour(video.channelIdHumanReadable) }}>
           <span className="list-view-item">
-            {video.channelTitle.substring(0,25).trim()} - {new Date(video.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - {' '}
+            {video.channelTitle.substring(0,25).trim()} <span className="video-date">{new Date(video.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span> {' '}
             <a
               href={`https://www.youtube.com/watch?v=${video.id}`}
               target="_blank"
@@ -67,7 +67,7 @@ export function VideoGrid({videos, handleWatchedChange, embedsMode = false}: Vid
             checked={video.hasBeenWatched}
             onChange={() => handleWatchedChange(video.id)}
           />
-          <p className="video-tile-header">{video.channelTitle.substring(0,25).trim()} - {new Date(video.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>
+          <p className="video-tile-header">{video.channelTitle.substring(0,25).trim()} <span className="video-date">{new Date(video.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span></p>
           {/* in embed view, watched video embeds are replaced by thumbs */}
           {video.hasBeenWatched || !embedsMode ? (
             <a

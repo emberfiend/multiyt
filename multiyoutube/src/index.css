@@ -189,6 +189,11 @@ button:focus-visible {
   background-color: #f5f5dc !important;
 }
 
+.video-date {
+  color: #888;
+  padding: 0 !important;
+}
+
 .channel-list {
   display: flex;
   flex-wrap: wrap;
