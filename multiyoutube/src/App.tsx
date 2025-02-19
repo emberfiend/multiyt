@@ -477,11 +477,11 @@ function App() {
           <label>
             API key{' '}
             <input 
+              className="api-key"
               type="text"
               value={apiKey}
               onChange={handleApiKeyChange}
               placeholder="API Key"
-              style={{ width: '350px' }}
             />
           </label>
           <div className="info">When my key runs out of quota, <a href="https://developers.google.com/youtube/registering_an_application" target='blank'>request your own</a> (free).</div>

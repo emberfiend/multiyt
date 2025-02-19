@@ -267,6 +267,10 @@ button:focus-visible {
   text-align: center;
 }
 
+.api-key {
+  width: 240px !important;
+}
+
 @media (max-width: 370px) {
   body {
     justify-content: left;
