@@ -74,6 +74,8 @@ function App() {
   const [hideWatched, setHideWatched] = useState<boolean>(() => {
     return localStorage.getItem('hideWatched') === 'true';
   });
+  const [refreshTimer, setRefreshTimer] = useState<NodeJS.Timeout | null>(null);
+  const [dummy, setDummy] = useState<number>(0);
 
   // HOOKS
 
@@ -82,6 +84,11 @@ function App() {
       const script = document.createElement('script');
       script.src = 'https://apis.google.com/js/api.js';
       script.onload = () => {
+        if (window.gapi.client) {
+          console.log('gapi client already loaded');
+          fetchData();
+          return;
+        }
         window.gapi.load('client', async () => {
           try {
             await window.gapi.client.init({
@@ -103,6 +110,17 @@ function App() {
     };
 
     const fetchData = async () => {
+      console.log('Fetching data at time', new Date());
+
+      // dummy state changes 5 minutes from now, and is a dependency of this useEffect, prompting it to re-run every 5 minutes (and do useful API things if appropriate)
+      if (refreshTimer) {
+        clearInterval(refreshTimer);
+      }
+      setRefreshTimer(setInterval(() => {
+        console.log('Auto-refresh');
+        setDummy((prev) => prev + 1);
+      }, 5 * 60 * 1000)); // 5 min
+
       const now = Date.now();
       const volumeScalar = Math.floor(perChannelQueryCount / 10) + 1 * channels.length;
       const cullTimer = volumeScalar * 10 * 60 * 1000;
@@ -207,7 +225,7 @@ function App() {
     initializeGapi();
   }, 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  [lastAPICall, videos, perChannelQueryCount, newChannel, isAddingChannel, historyMonths]); // channels omitted
+  [dummy, lastAPICall, videos, perChannelQueryCount, newChannel, isAddingChannel, historyMonths]); // channels omitted
 
   useEffect(() => {
     localStorage.setItem('videos', JSON.stringify(videos));
