@@ -76,6 +76,7 @@ export function VideoGrid({videos, handleWatchedChange, embedsMode = false}: Vid
               rel="noopener noreferrer"
             >
               <img
+                /* todo: try webp first */
                 src={`https://img.youtube.com/vi/${video.id}/maxresdefault.jpg`} /* sd, hq, default: 4:3 | mq, maxres: 30:17 */
                 alt={video.title}
                 width="240"
