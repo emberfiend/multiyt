@@ -437,7 +437,7 @@ function App() {
               type="text"
               value={filterTerms}
               onChange={handleFilterTermsChange}
-              placeholder="Comma-separated terms"
+              placeholder="trump,politics,reacts"
               style={{ width: '150px' }}
             />
           </label>
