@@ -12,14 +12,15 @@ function App() {
   const itemsPerPageEmbeds = 4;
   const itemsPerPageList = 24;
 
-  const mergeChannels = (localChannels: Channel[], urlChannels: string[]): Channel[] => {
-    const merged = [...localChannels];
-    for (const urlChannel of urlChannels) {
-      if (!merged.some(channel => channel.humanReadable === urlChannel)) {
-        merged.push({ humanReadable: urlChannel, channelId: '', uploadsPlaylistId: '' });
+  const mergeChannels = (channelsA: Channel[], channelsB: Channel[]): Channel[] => {
+    const merged = [...channelsA];
+    for (const Bchannel of channelsB) {
+      if (!merged.some(channel => channel.humanReadable === Bchannel.humanReadable)) {
+        merged.push(Bchannel);
       }
     }
-    return merged.sort((a, b) => a.humanReadable.toLowerCase().localeCompare(b.humanReadable.toLowerCase()));
+    const channelsSorted = merged.sort((a, b) => a.humanReadable.toLowerCase().localeCompare(b.humanReadable.toLowerCase()));
+    return channelsSorted;
   };
   const [videos, setVideos] = useState<Video[]>(() => {
     const savedVideos = localStorage.getItem('videos');
@@ -34,7 +35,7 @@ function App() {
     const urlParams = new URLSearchParams(window.location.search);
     const urlChannels = urlParams.get('channels') || 'HGModernism~Paul.Sellers~ZeFrank';
     const localChannels = localStorage.getItem('channels') || '[]';
-    const mergedChannels = mergeChannels(JSON.parse(localChannels), urlChannels.split('~'));
+    const mergedChannels = mergeChannels(JSON.parse(localChannels), urlChannels.split('~').map(channel => ({ humanReadable: channel, channelId: '', uploadsPlaylistId: '' })));
     localStorage.setItem('channels', JSON.stringify(mergedChannels));
     if (mergedChannels.length !== JSON.parse(localChannels).length) {
       setLastAPICall(0);
@@ -155,22 +156,12 @@ function App() {
             });
           });
         }
-        //const toFetch = isAddingChannel ? newChannel! : channels.map(channel => channel.humanReadable).join('~');
+        
+        // if we're adding a channel, we pass an array with only that channel in it, for a smaller fetch
+        // otherwise we send everything
         const toFetch = isAddingChannel ? [{ humanReadable: newChannel!, channelId: '', uploadsPlaylistId: '' }] : channels;
 
-        /*if (isAddingChannel && newChannel) {
-          const updatedIdentifiers = mergeChannels(channels, [newChannel]);
-          
-          setChannels(updatedIdentifiers);
-          localStorage.setItem('channels', JSON.stringify(updatedIdentifiers));
-          setIsAddingChannel(false);
-          setNewChannel(null);
-        } else {
-          // we want loading a single channel to not reset the timer, so this is only done here
-          setLastAPICall(now);
-          localStorage.setItem('lastAPICall', now.toString());
-        }*/
-
+        // run the fetch
         const result: FetchResult = await fetchVideosAndUpdateChannels(
           toFetch,
           perChannelQueryCount,
@@ -178,26 +169,23 @@ function App() {
         );
         setLastAPICall(now);
         localStorage.setItem('lastAPICall', now.toString());
+
+        // handle channels
         if (isAddingChannel && newChannel) {
           setIsAddingChannel(false);
         }
         console.log('Old channels:', channels);
         console.log('Updated channels:', result.channels);
-        //const newChannels: Channel[] = isAddingChannel ? [...channels, result.channels] : result.channels;
-
-        // merge logic duplicated here?
-        // is this even needed? check channnels lifecycle wrt channels and result.channels being identical
-        const newChannels: Channel[] = isAddingChannel 
-          ? [...channels, ...(Array.isArray(result.channels) ? result.channels : [result.channels])] 
-          : Array.isArray(result.channels) ? result.channels : [result.channels];
-        
-        newChannels.sort((a, b) => a.humanReadable.toLowerCase().localeCompare(b.humanReadable.toLowerCase()))
-        setChannels(newChannels);
+        const mergedChannels = mergeChannels(channels, result.channels);
+        console.log('Merged channels:', mergedChannels);
+        setChannels(mergedChannels);
         localStorage.setItem('channels', JSON.stringify(result.channels))
+
+        // handle videos
         const fetchedVideosWithWatched = result.videos.map(video => ({
           ...video,
           hasBeenWatched: false,
-          channelIdHumanReadable: video.channelIdHumanReadable // Set channelIdHumanReadable
+          channelIdHumanReadable: video.channelIdHumanReadable // umm wtf does this do
         }));
         console.log('Previous videos:', videos);
         console.log('Fetched videos:', fetchedVideosWithWatched);
@@ -205,12 +193,9 @@ function App() {
           // concat arrays and deduplicate by video ID
           const mergedVideos = [...prevVideos, ...fetchedVideosWithWatched];
           const uniqueVideosMap = new Map<string, Video>();
-          /*mergedVideos.forEach(video => {
-            uniqueVideosMap.set(video.id, video);
-          });*/
           mergedVideos.forEach(video => {
             if (uniqueVideosMap.has(video.id)) {
-              // use found videos with hasBeenWatched=1 to update existing videos
+              // ensure hasBeenWatched=true is retained when deduplicating
               const existingVideo = uniqueVideosMap.get(video.id);
               if (existingVideo && video.hasBeenWatched) {
                 existingVideo.hasBeenWatched = true;
@@ -223,6 +208,7 @@ function App() {
           const uniqueVideos = Array.from(uniqueVideosMap.values())
             .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
           console.log('Merged videos:', mergedVideos);
+          // cullOldVideos broken out so it can be used elsewhere to react to historyMonths changes
           return cullOldVideos(uniqueVideos);
         });
       } catch (err) {
