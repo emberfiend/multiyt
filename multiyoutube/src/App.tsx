@@ -80,12 +80,23 @@ function App() {
   // HOOKS
 
   useEffect(() => {
-    const initializeGapi = () => {
+    const initializeGapiThenFetchData = () => {
+      // check if script element exists
+      if (window.gapi?.client) {
+        console.log('gapi client already loaded 1');
+        fetchData();
+        return;
+      }
+      if (document.querySelector('script[src="https://apis.google.com/js/api.js"]')) {
+        console.log('gapi client already loaded 2');
+        fetchData();
+        return;
+      }
       const script = document.createElement('script');
       script.src = 'https://apis.google.com/js/api.js';
       script.onload = () => {
         if (window.gapi.client) {
-          console.log('gapi client already loaded');
+          console.log('gapi client already loaded 3');
           fetchData();
           return;
         }
@@ -222,7 +233,7 @@ function App() {
       }
     };
 
-    initializeGapi();
+    initializeGapiThenFetchData();
   }, 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   [dummy, lastAPICall, videos, perChannelQueryCount, newChannel, isAddingChannel, historyMonths]); // channels omitted
