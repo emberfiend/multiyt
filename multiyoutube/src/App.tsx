@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { fetchVideosAndUpdateChannels, Video, Channel, FetchResult } from './youtube';
 import { PageSelector, VideoList, VideoGrid } from './Page';
 import { getColour } from './utility';
-//import { channel } from 'diagnostics_channel';
 
 function App() {
   
@@ -84,12 +83,10 @@ function App() {
     const initializeGapiThenFetchData = () => {
       // check if script element exists
       if (window.gapi?.client) {
-        console.log('gapi client already loaded 1');
         fetchData();
         return;
       }
       if (document.querySelector('script[src="https://apis.google.com/js/api.js"]')) {
-        console.log('gapi client already loaded 2');
         fetchData();
         return;
       }
@@ -97,7 +94,6 @@ function App() {
       script.src = 'https://apis.google.com/js/api.js';
       script.onload = () => {
         if (window.gapi.client) {
-          console.log('gapi client already loaded 3');
           fetchData();
           return;
         }
@@ -122,14 +118,11 @@ function App() {
     };
 
     const fetchData = async () => {
-      console.log('Fetching data at time', new Date());
-
       // dummy state changes 5 minutes from now, and is a dependency of this useEffect, prompting it to re-run every 5 minutes (and do useful API things if appropriate)
       if (refreshTimer) {
         clearInterval(refreshTimer);
       }
       setRefreshTimer(setInterval(() => {
-        console.log('Auto-refresh');
         setDummy((prev) => prev + 1);
       }, 5 * 60 * 1000)); // 5 min
 
@@ -142,6 +135,7 @@ function App() {
         console.log('Next API hit in', Math.round((cullTimer - (now - lastAPICall)) / 60000), 'minutes');
         return;
       }
+      console.log('Fetching fresh data');
 
       setLoading(true);
       setError(null);
@@ -159,11 +153,13 @@ function App() {
         
         // if we're adding a channel, we pass an array with only that channel in it, for a smaller fetch
         // otherwise we send everything
-        const toFetch = isAddingChannel ? [{ humanReadable: newChannel!, channelId: '', uploadsPlaylistId: '' }] : channels;
+        const channelsToFetch = isAddingChannel ? [{ humanReadable: newChannel!, channelId: '', uploadsPlaylistId: '' }] : channels;
 
-        // run the fetch
+        // run the fetch. FetchResult below. note that per the name, channels are updated with their youtube id and uploads playlist id in the returned array
+        /* videos: Video[];
+           channels: Channel[]; */
         const result: FetchResult = await fetchVideosAndUpdateChannels(
-          toFetch,
+          channelsToFetch,
           perChannelQueryCount,
           apiKey
         );
@@ -174,21 +170,12 @@ function App() {
         if (isAddingChannel && newChannel) {
           setIsAddingChannel(false);
         }
-        console.log('Old channels:', channels);
-        console.log('Updated channels:', result.channels);
         const mergedChannels = mergeChannels(channels, result.channels);
-        console.log('Merged channels:', mergedChannels);
         setChannels(mergedChannels);
         localStorage.setItem('channels', JSON.stringify(result.channels))
 
         // handle videos
-        const fetchedVideosWithWatched = result.videos.map(video => ({
-          ...video,
-          hasBeenWatched: false,
-          channelIdHumanReadable: video.channelIdHumanReadable // umm wtf does this do
-        }));
-        console.log('Previous videos:', videos);
-        console.log('Fetched videos:', fetchedVideosWithWatched);
+        const fetchedVideosWithWatched = result.videos;
         setVideos((prevVideos) => {
           // concat arrays and deduplicate by video ID
           const mergedVideos = [...prevVideos, ...fetchedVideosWithWatched];
@@ -207,7 +194,6 @@ function App() {
           // sort by publication date (descending)
           const uniqueVideos = Array.from(uniqueVideosMap.values())
             .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-          console.log('Merged videos:', mergedVideos);
           // cullOldVideos broken out so it can be used elsewhere to react to historyMonths changes
           return cullOldVideos(uniqueVideos);
         });
@@ -245,7 +231,6 @@ function App() {
   }, [historyMonths, cullOldVideos]);
 
   useEffect(() => {
-    console.log('Updating URL and localStorage with channels:', channels);
     const urlParams = new URLSearchParams(window.location.search);
     urlParams.set('channels', channels.map(channel => channel.humanReadable).join('~'));
     window.history.replaceState(null, '', `?${urlParams.toString()}`);
@@ -317,7 +302,6 @@ function App() {
   };
 
   const handleWatchedChange = (videoId: string) => {
-    console.log('Toggling watched status for video', videoId);
     setVideos((prevVideos) =>
       prevVideos.map((video) =>
         video.id === videoId

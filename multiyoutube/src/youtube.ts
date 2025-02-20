@@ -31,19 +31,17 @@ export async function fetchVideosAndUpdateChannels(
   for (const channel of channels) {
     try {
       let { channelId, uploadsPlaylistId } = channel;
-      //const channelIndex = updatedChannels.findIndex(c => c.humanReadable === channel.humanReadable);
 
       if (!channelId) {
         console.log(`Fetching channel ID for ${channel.humanReadable}`);
         channelId = await getChannelIdFromUsername(channel.humanReadable, apiKey);
-        // updatedChannels[channelIndex].channelId = channelId;
+        // not pointless, we pass the channels object back to the caller
         channel.channelId = channelId;
       }
 
       if (!uploadsPlaylistId) {
         console.log(`Fetching uploads playlist ID for ${channel.humanReadable}`);
         uploadsPlaylistId = await getUploadsPlaylistId(channelId, apiKey);
-        // updatedChannels[channelIndex].uploadsPlaylistId = uploadsPlaylistId;
         channel.uploadsPlaylistId = uploadsPlaylistId;
       }
 
