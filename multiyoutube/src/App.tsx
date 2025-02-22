@@ -57,10 +57,10 @@ function App() {
     return localStorage.getItem('viewMode') as ViewMode || ViewMode.List;
   });
   const [perChannelQueryCount, setPerChannelQueryCount] = useState<number>(() => {
-    return parseInt(localStorage.getItem('perChannelQueryCount') || '3', 10);
+    return parseInt(localStorage.getItem('perChannelQueryCount') || '15', 10);
   });
   const [historyMonths, setHistoryMonths] = useState<number>(() => {
-    return parseInt(localStorage.getItem('historyMonths') || '3', 10);
+    return parseInt(localStorage.getItem('historyMonths') || '6', 10);
   });
   const [currentPage, setCurrentPage] = useState<number>(() => {
     return parseInt(localStorage.getItem('currentPage') || '1', 10);
