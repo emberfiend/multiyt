@@ -47,7 +47,6 @@ function App() {
   const [filterTerms, setFilterTerms] = useState<string>(() => {
     return localStorage.getItem('filterTerms') || '';
   });
-  //const [inputValue, setInputValue] = useState<string>(channels);
   enum ViewMode {
     List = 'list',
     Thumbs = 'thumbs',
@@ -66,7 +65,7 @@ function App() {
     return parseInt(localStorage.getItem('currentPage') || '1', 10);
   });
   const [apiKey, setApiKey] = useState<string>(() => {
-    return localStorage.getItem('apiKey') || 'AIzaSyAm9PqXUWUL7r-uEWL0OAmnZ3kL8oFyV0M';
+    return localStorage.getItem('apiKey') || 'your-key-here';
   });
   const [hideShorts, setHideShorts] = useState<boolean>(() => {
     return localStorage.getItem('hideShorts') === 'true';
@@ -333,7 +332,6 @@ function App() {
 
   const handlePerChannelQueryCountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newCount = parseInt(event.target.value, 10);
-    // check newCount is a number and is between 1 and 50
     if (isNaN(newCount) || newCount < 1 || newCount > 50) {
       return;
     }
@@ -344,7 +342,6 @@ function App() {
 
   const handleHistoryMonthsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newHistoryMonths = parseInt(event.target.value, 10);
-    // check newHistoryMonths is a number and is between 1 and 12
     if (isNaN(newHistoryMonths) || newHistoryMonths < 1 || newHistoryMonths > 9) {
       return;
     }
