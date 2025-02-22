@@ -104,23 +104,36 @@ button:focus-visible {
   grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
 }
 
-.video-grid input[type="checkbox"] {
-  transform: scale(1.2);
-}
-
 .video-tile {
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 0.5em;
-}
+  position: relative;
 
-.video-tile p {
-  margin: 0.3rem 0;
-}
+  input[type="checkbox"] {
+    /* align to top right of .video-tile */
+    position: absolute;
+    top: 0;
+    right: 0;
+    margin: 0.5rem;
+    transform: scale(1.2);
+  }
 
-.video-tile-header {
-  white-space: nowrap; /* disallow wrapping to second line */
+  p {
+    margin: 0;
+    margin: 0.3rem 0;
+  }
+
+  .video-tile-header {
+    margin: 0 0 0.2rem 0;
+    white-space: nowrap; /* disallow wrapping to second line */
+  }
+
+  .video-tile-title {
+    text-align: center;
+    font-size: 0.75rem;
+  }
 }
 
 .video-tile-watched {

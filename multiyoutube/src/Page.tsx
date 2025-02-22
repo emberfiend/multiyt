@@ -79,21 +79,21 @@ export function VideoGrid({videos, handleWatchedChange, embedsMode = false}: Vid
                 /* todo: try webp first */
                 src={`https://img.youtube.com/vi/${video.id}/maxresdefault.jpg`} /* sd, hq, default: 4:3 | mq, maxres: 30:17 */
                 alt={video.title}
-                width="240"
-                height="135"
+                width="281"
+                height="158"
               />
             </a>
           ) : (
             <iframe
-              width="240"
-              height="135"
+              width="281"
+              height="158"
               src={`https://www.youtube.com/embed/${video.id}`}
               title={video.title}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             ></iframe>
           )}
-          <p>{video.title}</p>
+          <p className="video-tile-title">{video.title}</p>
         </div>
       ))}
     </div>
